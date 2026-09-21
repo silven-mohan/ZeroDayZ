@@ -2,9 +2,10 @@
 This is the source code for the *Centralized Hostel Complain Management and Maintenance System*.
 
 
-# LICENSE:
-----
+### 📝 LICENSE:
+
 Check [LICENSE.md](./LICENSE) for more details.
+
 ----
 
-                            ***Made with 🩵***
+<p align = "center"> Made with 🩵 </p>

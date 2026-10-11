@@ -1,33 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <header align = "center"><strong>ZeroDayZ</strong></header>
+{% extends "base.html" %}
 
-    <div class = "staff-login-card">
-        <h2 align = "center"><em>Staff Login</em></h2>
+{% block title %}Staff Login | ZeroDayZ{% endblock %}
+{% block description %}Sign in to ZeroDayZ with your staff ID to see and update assigned hostel complaints.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
 
-        <div class = "login-cred-card">
-            <p align = "center">Welcome to ZZ portal</p>
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">
+{% endblock %}
 
-            <form action = "">
-                <label for = "">Mobile Number</label>
-                <input type = "number" placeholder = "Enter your mobile number">
-                <br>
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+{% endblock %}
 
-                <label for = "">Password:</label>
-                <input type = "password" placeholder="Enter your password">
-                <br>
+{% block content %}
+  <section class="login login--staff" aria-labelledby="page-title">
+    <h1 id="page-title" class="login__title">Staff login</h1>
+    <p class="login__lead">Sign in with your staff ID to see and update the complaints assigned to you.</p>
 
-                <p>Forgot Password?</p>
+    <div class="panel">
+      <span class="panel__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.700 6.300a4 4 0 0 0-5.400 5.100L3 17.700V21h3.300l6.300-6.300a4 4 0 0 0 5.100-5.400l-2.600 2.600-2.400-.6-.6-2.400 2.600-2.600z"/></svg>
+      </span>
 
-                <button type = "submit">Submit</button>
-            </form>
+      {% if errors %}
+      <div class="alert alert--error" id="form-errors" role="alert" tabindex="-1">
+        <p class="alert__title">Please fix the following</p>
+        <ul>
+          {% for field, message in errors.items() %}
+          <li><a href="#{{ field }}">{{ message }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if notice %}
+      <div class="alert alert--info" role="status">{{ notice }}</div>
+      {% endif %}
+
+      <form class="form" method="post" action="{{ url_for('staff_login') }}">
+        <div class="field">
+          <label for="staff_id">Staff ID</label>
+          <input id="staff_id" name="staff_id" type="text" value="{{ staff_id }}"
+                 placeholder="Enter your staff ID" autocomplete="username"
+                 autocapitalize="characters" spellcheck="false" required
+                 {% if errors.staff_id %}aria-invalid="true" aria-describedby="staff_id-error"{% endif %}>
+          {% if errors.staff_id %}<p class="field__error" id="staff_id-error">{{ errors.staff_id }}</p>{% endif %}
         </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="field__wrap">
+            <input id="password" name="password" type="password"
+                   placeholder="Enter your password" autocomplete="current-password" required
+                   {% if errors.password %}aria-invalid="true" aria-describedby="password-error"{% endif %}>
+            <button class="field__toggle" type="button" aria-controls="password" aria-pressed="false" hidden>Show</button>
+          </div>
+          {% if errors.password %}<p class="field__error" id="password-error">{{ errors.password }}</p>{% endif %}
+        </div>
+
+        <p class="form__row"><a class="link" href="{{ url_for('forgot_password') }}">Forgot password?</a></p>
+
+        <button class="btn" type="submit">Sign in</button>
+      </form>
+
+      <p class="panel__switch">Not staff? <a class="link" href="{{ url_for('index') }}">Choose a different account</a></p>
     </div>
-</body>
-</html>
+  </section>
+
+  {% include "partials/scene.html" %}
+{% endblock %}

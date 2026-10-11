@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found | ZeroDayZ{% endblock %}
+{% block description %}This page could not be found. Head back to ZeroDayZ to sign in.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/error.css') }}">
+{% endblock %}
+
+{% block content %}
+  <section class="lost" aria-labelledby="page-title">
+
+    <div class="door" aria-hidden="true">
+      <span class="door__light"></span>
+      <span class="door__leaf">
+        <span class="door__plate">404</span>
+        <span class="door__handle"></span>
+      </span>
+    </div>
+
+    <figure class="lost__quote">
+      <blockquote>
+        <h1 id="page-title">&ldquo;How did you reach here?&rdquo;</h1>
+      </blockquote>
+      <figcaption>&mdash; the hostel warden, probably</figcaption>
+    </figure>
+
+    <p class="lost__text">
+      {% if message %}
+        {{ message }} Please check back soon.
+      {% else %}
+        There is no room at this address.
+        {% if path %}We looked for <code>{{ path }}</code> and found nothing.{% endif %}
+      {% endif %}
+    </p>
+
+    <a class="btn" href="{{ url_for('index') }}">Take me back to the main page</a>
+  </section>
+
+  {% include "partials/scene.html" %}
+{% endblock %}

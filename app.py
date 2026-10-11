@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Flask, abort, render_template, request
 from jinja2 import TemplateNotFound
+from werkzeug.exceptions import NotFound
 
 # HTML lives in templates/. CSS/JS/images live in public/ because Vercel only serves
 # static files from public/. Serving public/ at the site root makes local runs
@@ -27,45 +28,56 @@ def index():
     return page("mainlogin.html")
 
 
-@app.route("/login/student", methods=["GET", "POST"])
-def student_login():
+def login_view(template, id_field, id_message):
+    """Shared sign-in handling for student / staff / admin pages."""
     errors = {}
-    roll_number = ""
+    identifier = ""
     notice = None
 
     if request.method == "POST":
-        roll_number = request.form.get("roll_number", "").strip()
+        identifier = request.form.get(id_field, "").strip()
         password = request.form.get("password", "")
 
-        if not roll_number:
-            errors["roll_number"] = "Enter your roll number."
+        if not identifier:
+            errors[id_field] = id_message
         if not password:
             errors["password"] = "Enter your password."
 
         if not errors:
-            # TODO: check the roll number and password against the student database,
-            # then start a session and redirect to the student dashboard.
-            notice = "Student sign-in is not connected yet. Your details were not saved."
+            # TODO: check the ID and password against the database, then start a
+            # session and redirect to the right dashboard.
+            notice = "Sign-in is not connected yet. Your details were not saved."
 
     # The password is never sent back to the page.
-    return render_template(
-        "login/student.html", errors=errors, roll_number=roll_number, notice=notice
-    )
+    return render_template(template, errors=errors, notice=notice, **{id_field: identifier})
 
 
-@app.route("/login/student/forgot")
-def forgot_password():
-    return page("login/forgot.html")
+@app.route("/login/student", methods=["GET", "POST"])
+def student_login():
+    return login_view("login/student.html", "roll_number", "Enter your roll number.")
 
 
-@app.route("/login/staff")
+@app.route("/login/staff", methods=["GET", "POST"])
 def staff_login():
-    return page("login/staff.html")
+    return login_view("login/staff.html", "staff_id", "Enter your staff ID.")
 
 
 @app.route("/login/admin")
 def admin_login():
     return page("login/admin.html")
+
+
+@app.route("/login/forgot")
+def forgot_password():
+    return page("login/forgot.html")
+
+
+@app.errorhandler(404)
+def not_found(error):
+    # Show a custom message only when we raised the 404 ourselves (page not built yet).
+    message = error.description if error.description != NotFound.description else None
+    path = request.path if len(request.path) <= 60 else request.path[:57] + "..."
+    return render_template("404.html", message=message, path=path), 404
 
 
 if __name__ == "__main__":

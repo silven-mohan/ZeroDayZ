@@ -1,0 +1,109 @@
+/* ZeroDayZ – shared base: tokens, reset, header, footer, scenery.
+   Used by every page that extends templates/base.html */
+
+:root {
+  /* Light blue system – no dark surfaces, no purple */
+  --sky-top: #d9eeff;
+  --wash: #f4fbff;
+  --white: #fff;
+  --blue-300: #9bd3fb;
+  --blue-400: #62b9f2;
+  --blue-600: #1672b3;      /* accents, links, buttons (5:1 with white) */
+  --ink: #0f4a75;           /* text only */
+  --ink-soft: #3b6482;      /* secondary text */
+  --field-edge: #3d95cf;    /* input borders (3:1 on white) */
+
+  --door-student: #bfe3ff;  --edge-student: #6fbcf2;
+  --door-staff:   #bcedf2;  --edge-staff:   #5fd0dd;
+  --door-admin:   #c9defb;  --edge-admin:   #86b0ee;
+
+  --font-display: "Gabarito", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, sans-serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--sky-top) 0, var(--wash) 420px) var(--wash);
+}
+main { flex: 1; display: flex; flex-direction: column; }
+
+/* ---------- Accessibility ---------- */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 20;
+  padding: .7rem 1rem;
+  color: var(--ink);
+  background: var(--white);
+  border: 2px solid var(--blue-600);
+  border-radius: 8px;
+  transition: top .2s var(--ease);
+}
+.skip-link:focus { top: 1rem; }
+
+:focus-visible { outline: 3px solid var(--blue-600); outline-offset: 4px; }
+
+/* ---------- Header ---------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem clamp(1rem, 4vw, 2.5rem);
+  background: var(--white);
+  border-bottom: 3px solid var(--blue-300);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 44px;
+  color: var(--blue-600);
+  text-decoration: none;
+}
+.brand__mark { width: 30px; height: 30px; }
+.brand__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: -.01em;
+}
+.site-header__tag { margin: 0; display: none; color: var(--ink-soft); font-size: .95rem; }
+@media (min-width: 820px) { .site-header__tag { display: block; } }
+@media (max-width: 380px) { .brand__name { font-size: 1.45rem; } }
+
+/* ---------- Scenery (decorative) ---------- */
+.scene {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 20.84vw, 420px);
+  margin-top: auto;
+}
+@media (max-height: 480px) and (orientation: landscape) { .scene { height: 90px; } }
+
+/* ---------- Footer ---------- */
+.site-footer {
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  background: #cfe8fb;
+}
+.site-footer p { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+}

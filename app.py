@@ -3,8 +3,10 @@ from datetime import datetime
 from flask import Flask, abort, render_template
 from jinja2 import TemplateNotFound
 
-# Flask defaults: HTML in templates/, CSS/JS/images in static/
-app = Flask(__name__)
+# HTML lives in templates/. CSS/JS/images live in public/ because Vercel only serves
+# static files from public/. Serving public/ at the site root makes local runs
+# (python app.py) and Vercel use the same URLs, e.g. /styles/mainlogin.css
+app = Flask(__name__, static_folder="public", static_url_path="")
 
 
 @app.context_processor

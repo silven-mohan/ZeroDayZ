@@ -1,0 +1,402 @@
+/* ZeroDayZ – main login: choose an account (three hostel doors) */
+
+:root {
+  /* Light blue system – no dark surfaces, no purple */
+  --sky-top: #d9eeff;
+  --wash: #f4fbff;
+  --white: #fff;
+  --blue-300: #9bd3fb;
+  --blue-400: #62b9f2;
+  --blue-600: #1672b3;      /* accents, links (5:1 on white) */
+  --ink: #0f4a75;           /* text only */
+  --ink-soft: #3b6482;      /* secondary text */
+
+  --wall: #e6f4ff;
+  --floor: #c4e3f8;
+
+  --door-student: #bfe3ff;  --edge-student: #6fbcf2;
+  --door-staff:   #bcedf2;  --edge-staff:   #5fd0dd;
+  --door-admin:   #c9defb;  --edge-admin:   #86b0ee;
+
+  --font-display: "Gabarito", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, sans-serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--sky-top) 0, var(--wash) 420px) var(--wash);
+}
+
+main { flex: 1; }
+
+/* ---------- Accessibility ---------- */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 20;
+  padding: .7rem 1rem;
+  color: var(--ink);
+  background: var(--white);
+  border: 2px solid var(--blue-600);
+  border-radius: 8px;
+  transition: top .2s var(--ease);
+}
+.skip-link:focus { top: 1rem; }
+
+:focus-visible {
+  outline: 3px solid var(--blue-600);
+  outline-offset: 4px;
+}
+
+/* ---------- Header ---------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem clamp(1rem, 4vw, 2.5rem);
+  background: var(--white);
+  border-bottom: 3px solid var(--blue-300);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 44px;
+  color: var(--blue-600);
+  text-decoration: none;
+}
+.brand__mark { width: 30px; height: 30px; }
+.brand__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: -.01em;
+}
+
+.site-header__tag {
+  margin: 0;
+  display: none;
+  color: var(--ink-soft);
+  font-size: .95rem;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 2rem) 0;
+  text-align: center;
+}
+
+.hero__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.1rem, 6.5vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+
+.hero__lead {
+  max-width: 46ch;
+  margin: 1rem auto clamp(1.8rem, 4vw, 3rem);
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 2.4vw, 1.15rem);
+  text-wrap: pretty;
+}
+
+/* ---------- Corridor + doors ---------- */
+.corridor {
+  padding: clamp(1.2rem, 3vw, 2.2rem) clamp(1rem, 3vw, 2.5rem);
+  background: var(--wall);
+  border: 2px solid var(--blue-300);
+  border-radius: 20px;
+}
+
+.doors {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  gap: 1.2rem;
+  max-width: 440px;
+}
+.doors > li { display: flex; }
+
+.door {
+  --face: var(--door-student);
+  --edge: var(--edge-student);
+  flex: 1;
+  display: grid;                 /* light + leaf share one cell */
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: 10px 10px 0 0;
+}
+.door--staff { --face: var(--door-staff); --edge: var(--edge-staff); }
+.door--admin { --face: var(--door-admin); --edge: var(--edge-admin); }
+
+/* what is behind the door: bright light */
+.door__light {
+  grid-area: 1 / 1;
+  border-radius: inherit;
+  border: 3px solid var(--edge);
+  background: radial-gradient(120% 90% at 30% 15%, #fff, #e9f8ff 55%, #cdeeff);
+}
+
+.door__leaf {
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .55rem;
+  padding: 1.5rem 2.4rem 1.3rem;   /* side room keeps text clear of the handle */
+  text-align: center;
+  background: var(--face);
+  border: 3px solid var(--edge);
+  border-radius: inherit;
+  transform-origin: left center;
+  transform: perspective(900px) rotateY(0deg);
+  transition: transform .6s var(--ease), box-shadow .6s var(--ease);
+  animation: ajar .9s var(--ease) backwards;
+  animation-delay: calc(.2s + var(--i, 0) * .15s);
+}
+
+/* raised panel on the door face */
+.door__leaf::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(255, 255, 255, .8);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.door__icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: .2rem;
+  color: var(--ink);
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 50%;
+}
+.door__icon svg { width: 28px; height: 28px; }
+
+.door__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+.door__text {
+  margin: 0 0 .6rem;
+  max-width: 24ch;
+  color: var(--ink);
+  font-size: 1rem;
+  text-wrap: balance;
+}
+
+.door__cta {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: .55rem 1.2rem;
+  color: var(--blue-600);
+  font-weight: 600;
+  background: var(--white);
+  border: 2px solid var(--blue-600);
+  border-radius: 999px;
+  transition: background-color .25s, color .25s;
+}
+
+.door__handle {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  width: 10px;
+  height: 36px;
+  background: var(--white);
+  border: 2px solid var(--edge);
+  border-radius: 6px;
+}
+
+/* the door answers the person: swings open a little */
+.door:focus-visible { outline-offset: 6px; }
+.door:focus-visible .door__leaf {
+  transform: perspective(900px) rotateY(-24deg);
+  box-shadow: 10px 10px 24px -10px rgba(22, 114, 179, .4);
+}
+.door:focus-visible .door__cta { background: var(--blue-600); color: var(--white); }
+.door:active .door__leaf { transform: perspective(900px) rotateY(-30deg); }
+
+@media (hover: hover) {
+  .door:hover .door__leaf {
+    transform: perspective(900px) rotateY(-24deg);
+    box-shadow: 10px 10px 24px -10px rgba(22, 114, 179, .4);
+  }
+  .door:hover .door__cta { background: var(--blue-600); color: var(--white); }
+}
+
+/* "Last used" tag added by JavaScript */
+.door__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: .15rem .6rem;
+  color: var(--ink);
+  font-size: .8rem;
+  font-weight: 600;
+  background: var(--white);
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+}
+
+/* ---------- How it works ---------- */
+.how {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 3.5rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.how__title {
+  margin: 0 0 1.2rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.steps__item {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+.steps__item p { margin: 0; max-width: 34ch; }
+.steps__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  background: var(--white);
+  border: 2px solid var(--blue-300);
+  border-radius: 50%;
+}
+
+/* ---------- Scene ---------- */
+.scene {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 20.84vw, 420px);   /* 20.84vw = full drawing; narrower screens crop the sides */
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  background: #cfe8fb;
+}
+.site-footer p { margin: 0; }
+
+/* ---------- Motion: doors start ajar, then swing shut ---------- */
+@keyframes ajar {
+  from { transform: perspective(900px) rotateY(-38deg); }
+  to   { transform: perspective(900px) rotateY(0deg); }
+}
+
+/* ---------- Responsive ---------- */
+/* Large phones / small tablets: doors become wide, short doors */
+@media (min-width: 560px) and (max-width: 819px) {
+  .doors { max-width: 600px; }
+  .door__leaf {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    grid-template-areas: "icon title cta" "icon text cta";
+    align-items: center;
+    column-gap: 1.2rem;
+    text-align: left;
+    padding: 1.2rem 3rem 1.2rem 1.4rem;
+  }
+  .door__icon   { grid-area: icon; margin: 0; }
+  .door__title  { grid-area: title; align-self: end; }
+  .door__text   { grid-area: text; align-self: start; margin: 0; max-width: none; }
+  .door__cta    { grid-area: cta; margin: 0; }
+  .door__handle { top: 40%; }
+}
+
+/* Desktop: three doors standing on the corridor floor */
+@media (min-width: 820px) {
+  .site-header__tag { display: block; }
+
+  .corridor {
+    padding-bottom: 0;
+    background: linear-gradient(to bottom, var(--wall) calc(100% - 34px), var(--floor) calc(100% - 34px));
+  }
+  .doors {
+    max-width: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1.2rem, 3vw, 2.5rem);
+    margin-bottom: 34px;
+  }
+  .door__leaf { min-height: 330px; padding-top: 2.2rem; }
+  .door__handle { top: 56%; }
+
+  .steps { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+}
+
+@media (min-width: 1600px) {
+  .hero, .how { max-width: 1200px; }
+}
+
+@media (max-width: 380px) {
+  .brand__name { font-size: 1.45rem; }
+  .door__title { font-size: 1.6rem; }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .scene { height: 90px; }
+}
+
+/* ---------- Respect motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}

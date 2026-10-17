@@ -182,9 +182,69 @@ def student_profile():
     return page("students/profile.html")
 
 
-@app.route("/students/complaints/new")
+COMPLAINT_CATEGORIES = [
+    "Electrical", "Plumbing", "Furniture", "Cleaning", "Internet / Wi-Fi", "Other",
+]
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
+# First bytes of real JPEG / PNG / WebP files (the file name alone is not trusted).
+PHOTO_SIGNATURES = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n", b"RIFF")
+
+
+def check_photo(photo):
+    """Return an error message for a bad photo, or None when it is fine or absent."""
+    if photo is None or not photo.filename:
+        return None
+    head = photo.stream.read(12)
+    photo.stream.seek(0, 2)
+    size = photo.stream.tell()
+    photo.stream.seek(0)
+    if not head.startswith(PHOTO_SIGNATURES) or (head.startswith(b"RIFF") and head[8:12] != b"WEBP"):
+        return "Choose a JPG, PNG or WebP photo."
+    if size > MAX_PHOTO_BYTES:
+        return "That photo is larger than 5 MB. Choose a smaller one."
+    return None
+
+
+@app.route("/students/complaints/new", methods=["GET", "POST"])
 def student_new_complaint():
-    return page("students/new_complaint.html")
+    student = get_current_student()
+    errors = {}
+    values = {"mobile": "", "location": "", "category": "", "description": ""}
+
+    if request.method == "POST":
+        for key in values:
+            values[key] = request.form.get(key, "").strip()
+        mobile_digits = "".join(ch for ch in values["mobile"] if ch.isdigit())
+        if mobile_digits.startswith("91") and len(mobile_digits) == 12:
+            mobile_digits = mobile_digits[2:]
+
+        if len(mobile_digits) != 10:
+            errors["mobile"] = "Enter a 10-digit mobile number."
+        if not values["location"]:
+            errors["location"] = "Enter the block, floor and room."
+        if values["category"] not in COMPLAINT_CATEGORIES:
+            errors["category"] = "Choose a category."
+        if len(values["description"]) < 10:
+            errors["description"] = "Describe the problem in at least 10 characters."
+        elif len(values["description"]) > 500:
+            errors["description"] = "Keep the description under 500 characters."
+        photo_error = check_photo(request.files.get("photo"))
+        if photo_error:
+            errors["photo"] = photo_error
+
+        if not errors:
+            # TODO: save the complaint (and the photo) for student["roll_number"].
+            # Redirect so that refreshing the page does not send it again.
+            return redirect(url_for("student_new_complaint", sent=1), code=303)
+
+    return render_template(
+        "students/new_complaint.html",
+        student=student,
+        errors=errors,
+        values=values,
+        categories=COMPLAINT_CATEGORIES,
+        sent=request.args.get("sent") == "1",
+    )
 
 
 @app.route("/students/complaints")

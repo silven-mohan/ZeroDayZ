@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{#
+  Shared layout for every page a worker (staff member) sees after signing in.
+  In a child page, set the current menu item before the blocks:
+      {% set active = 'profile' %}      (profile | requests | about | contact)
+#}
+
+{% block robots %}noindex, nofollow{% endblock %}
+{% block body_class %}workers{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/workers/workers.css') }}">
+{% endblock %}
+
+{% block subheader %}
+  <nav class="worker-nav" aria-label="Worker navigation">
+    <div class="worker-nav__inner">
+      <ul class="worker-nav__list">
+        <li><a href="{{ url_for('worker_profile') }}"  {% if active == 'profile' %}aria-current="page"{% endif %}>Profile</a></li>
+        <li><a href="{{ url_for('worker_requests') }}" {% if active == 'requests' %}aria-current="page"{% endif %}>Requests</a></li>
+        <li><a href="{{ url_for('worker_about') }}"    {% if active == 'about' %}aria-current="page"{% endif %}>About</a></li>
+        <li><a href="{{ url_for('worker_contact') }}"  {% if active == 'contact' %}aria-current="page"{% endif %}>Contact</a></li>
+      </ul>
+      {# Placeholder until sessions exist: sends the person back to the staff sign-in page. #}
+      <a class="worker-nav__out" href="{{ url_for('staff_login') }}">Sign out</a>
+    </div>
+  </nav>
+{% endblock %}

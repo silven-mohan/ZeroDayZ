@@ -1,0 +1,98 @@
+{% extends "workers/base_workers.html" %}
+{% set active = 'profile' %}
+
+{% block title %}My profile | ZeroDayZ Staff{% endblock %}
+{% block description %}Your ZeroDayZ staff profile and a summary of the hostel complaints you have handled.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/workers/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+  <article class="profile" aria-labelledby="page-title">
+
+    <header class="identity">
+      <div class="identity__banner" aria-hidden="true">
+        <!-- The reversed Z: ZeroDayZ's signature shape -->
+        <svg class="zmark" viewBox="0 0 100 100" focusable="false"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></svg>
+      </div>
+
+      <div class="identity__body">
+        {% if worker.photo %}
+          <img class="avatar avatar--photo" src="{{ worker.photo }}" alt="Photo of {{ worker.name }}" width="120" height="120">
+        {% else %}
+          <div class="avatar" aria-hidden="true">{{ worker.initials }}</div>
+        {% endif %}
+
+        <div class="identity__text">
+          <h1 id="page-title" class="identity__name">{{ worker.name }}</h1>
+          <ul class="chips">
+            <li class="chip">{{ worker.role }}</li>
+            <li class="chip">Staff ID {{ worker.staff_id }}</li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <div class="panels">
+
+      <section class="card" aria-labelledby="about-title">
+        <h2 id="about-title" class="card__title">About me</h2>
+        {% if worker.description %}
+          <p class="about">{{ worker.description }}</p>
+        {% else %}
+          <p class="empty">You have not added a description yet. Tell the hostel what kind of complaints you handle.</p>
+        {% endif %}
+      </section>
+
+      <section class="card" aria-labelledby="stats-title">
+        <h2 id="stats-title" class="card__title">My requests</h2>
+
+        {% if stats.total %}
+          {% set done = (stats.completed / stats.total * 100) | round(1) %}
+          {% set going = (stats.ongoing / stats.total * 100) | round(1) %}
+          {% set rejected = (stats.rejected / stats.total * 100) | round(1) %}
+
+          <p class="total"><strong>{{ stats.total }}</strong> requests in total, <strong>{{ done | round | int }}%</strong> completed</p>
+
+          <div class="bar" role="img"
+               aria-label="{{ stats.completed }} completed, {{ stats.ongoing }} ongoing, {{ stats.rejected }} rejected">
+            <span class="bar__seg bar__seg--done"     style="width: {{ done }}%; --i: 0"></span>
+            <span class="bar__seg bar__seg--ongoing"  style="width: {{ going }}%; --i: 1"></span>
+            <span class="bar__seg bar__seg--rejected" style="width: {{ rejected }}%; --i: 2"></span>
+          </div>
+
+          <ul class="stats">
+            <li class="stats__row stats__row--done">
+              <span class="stats__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>
+              </span>
+              <span class="stats__label">Completed</span>
+              <span class="stats__value">{{ stats.completed }}</span>
+            </li>
+            <li class="stats__row stats__row--ongoing">
+              <span class="stats__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/></svg>
+              </span>
+              <span class="stats__label">Ongoing</span>
+              <span class="stats__value">{{ stats.ongoing }}</span>
+            </li>
+            <li class="stats__row stats__row--rejected">
+              <span class="stats__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
+              </span>
+              <span class="stats__label">Rejected</span>
+              <span class="stats__value">{{ stats.rejected }}</span>
+            </li>
+          </ul>
+        {% else %}
+          <p class="empty">No requests yet. New complaints assigned to you will show up here.</p>
+        {% endif %}
+
+        <a class="btn" href="{{ url_for('worker_requests') }}">See all requests</a>
+      </section>
+
+    </div>
+  </article>
+{% endblock %}

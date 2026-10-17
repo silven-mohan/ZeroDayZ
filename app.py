@@ -72,6 +72,45 @@ def forgot_password():
     return page("login/forgot.html")
 
 
+# ---------- Worker (staff) area: pages shown after a worker signs in ----------
+def get_current_worker():
+    """SAMPLE DATA. TODO: load the signed-in worker and their request counts from
+    the database once sign-in and sessions exist."""
+    name = "Swejo"
+    worker = {
+        "name": name,
+        "initials": "".join(part[0] for part in name.split()[:2]).upper(),
+        "role": "Hostel staff",
+        "staff_id": "ST-0001",
+        "description": "Looks after electrical and plumbing complaints in the hostel.",
+        "photo": None,  # URL of an uploaded photo; None shows the initials instead
+    }
+    stats = {"completed": 72, "ongoing": 2, "rejected": 12}
+    stats["total"] = sum(stats.values())
+    return worker, stats
+
+
+@app.route("/workers/profile")
+def worker_profile():
+    worker, stats = get_current_worker()
+    return render_template("workers/profile.html", worker=worker, stats=stats)
+
+
+@app.route("/workers/requests")
+def worker_requests():
+    return page("workers/requests.html")
+
+
+@app.route("/workers/about")
+def worker_about():
+    return page("workers/about.html")
+
+
+@app.route("/workers/contact")
+def worker_contact():
+    return page("workers/contact.html")
+
+
 @app.errorhandler(404)
 def not_found(error):
     # Show a custom message only when we raised the 404 ourselves (page not built yet).

@@ -1,0 +1,56 @@
+/* ZeroDayZ – worker (staff) area: shared menu + colour set.
+   Staff use the aqua colour set, the same as the staff login page. */
+
+body.workers {
+  --accent: #0a7389;        /* buttons, active menu item (5.5:1 with white) */
+  --accent-soft: #dcf5f8;   /* hover wash */
+  --face: var(--door-staff);
+  --edge: var(--edge-staff);
+  --line: #cdeef3;          /* quiet borders */
+}
+
+/* ---------- Menu ---------- */
+.worker-nav {
+  background: var(--white);
+  border-bottom: 2px solid var(--line);
+}
+.worker-nav__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .75rem;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: .5rem clamp(1rem, 4vw, 2rem);
+}
+.worker-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.worker-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background-color .2s, color .2s;
+}
+.worker-nav a:hover { background: var(--accent-soft); }
+.worker-nav a[aria-current="page"] { color: var(--white); background: var(--accent); }
+
+.worker-nav__out {
+  margin-left: auto;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .worker-nav a { padding: 0 .65rem; }
+}

@@ -12,7 +12,11 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 
 @app.context_processor
 def inject_globals():
-    return {"current_year": datetime.now().year}
+    return {
+        "current_year": datetime.now().year,
+        # Number shown on the Requests tab of the worker menu.
+        "pending_count": len(get_upcoming_requests()),
+    }
 
 
 def page(template_name):
@@ -96,9 +100,56 @@ def worker_profile():
     return render_template("workers/profile.html", worker=worker, stats=stats)
 
 
+def get_upcoming_requests():
+    """SAMPLE DATA. TODO: load the new requests assigned to the signed-in worker."""
+    return [
+        {
+            "id": 1,
+            "location": "Hostel Block-I, Ground Floor, Room No. 26",
+            "description": (
+                "From the last three days we are having voltage fluctuations, please "
+                "take our request into consideration and resolve it as soon as possible."
+            ),
+        }
+    ]
+
+
+def get_past_requests():
+    """SAMPLE DATA. TODO: load the worker's earlier requests.
+    status is one of: completed, ongoing, rejected, cancelled"""
+    return [
+        {"title": "Light issues", "status": "completed"},
+        {"title": "Plug point issue", "status": "completed"},
+        {"title": "Fan issue", "status": "completed"},
+        {"title": "Low voltage issue", "status": "ongoing"},
+        {"title": "Light replacement", "status": "ongoing"},
+        {"title": "Fan issues", "status": "rejected"},
+        {"title": "Light issues", "status": "cancelled"},
+    ]
+
+
+def render_requests(notice=None):
+    return render_template(
+        "workers/requests.html",
+        upcoming=get_upcoming_requests(),
+        past=get_past_requests(),
+        notice=notice,
+    )
+
+
 @app.route("/workers/requests")
 def worker_requests():
-    return page("workers/requests.html")
+    return render_requests()
+
+
+@app.route("/workers/requests/<int:request_id>/<action>", methods=["POST"])
+def worker_request_action(request_id, action):
+    if action not in ("accept", "decline"):
+        abort(404)
+    # TODO: save the worker's choice for this request in the database.
+    return render_requests(
+        notice="Your choice was not saved yet. Requests are not connected to the database."
+    )
 
 
 @app.route("/workers/about")

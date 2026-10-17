@@ -45,9 +45,6 @@
           <a href="{{ url_for(endpoint) }}" {% if active == key %}aria-current="page"{% endif %}>
             <span class="worker-nav__icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icons[key] | safe }}</svg>
-              {% if key == 'requests' and pending_count %}
-                <span class="worker-nav__count">{{ pending_count }}<span class="sr-only"> new</span></span>
-              {% endif %}
             </span>
             <span class="worker-nav__label">{{ label }}</span>
           </a>

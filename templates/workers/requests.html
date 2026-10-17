@@ -1,47 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <header align = "center"><strong>ZeroDayZ</strong></header>
+{% extends "workers/base_workers.html" %}
+{% set active = 'requests' %}
 
-    <div class = "nav-bar">
-        <a href = "profile.html">Profile</a>
-        <a href = "requests.html">Requests</a>
-    </div>
+{% block title %}Requests | ZeroDayZ Staff{% endblock %}
+{% block description %}Review new hostel complaints assigned to you and see your previous requests.{% endblock %}
 
-    <div class = "uppcoming-requests-card">
-        <h2 align = "center">Upcoming Requests</h2>
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/workers/requests.css') }}">
+{% endblock %}
 
-        <div class = "Location-Card">
-            <p>Location: Hostel Block-I, Ground Floor, Room No. 26</p>
-        </div>
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/requests.js') }}" defer></script>
+{% endblock %}
 
-        <div class = "Description-Card">
-            <p>Description: The light in the room is not working. Please fix it.</p>
-        
-        </div>
+{% block content %}
+  {% set statuses = {
+    'completed': 'Completed',
+    'ongoing':   'Ongoing',
+    'rejected':  'Rejected',
+    'cancelled': 'Cancelled'
+  } %}
 
-        <button class = "accept-button">Accept</button>
-        <button class = "reject-button">Reject</button>
-    </div>
+  <div class="requests">
+    <h1 id="page-title" class="requests__title">Requests</h1>
 
-    <div class = "Resolved-Requests-Card">
-        <h2 align = "center">Resolved Requests</h2>
+    {% if notice %}
+      <div class="alert" role="status">{{ notice }}</div>
+    {% endif %}
 
-        <div class = "requests-list-card">
-            <p>Light Issues...</p>
-            <p>Plug Point Issues...</p>
-            <p>Fan Issues...</p>
-            <p>Low Voltage Issues...</p>
-            <p>Light Replacement...</p>
-            <p>Fan Issues...</p>
-            <p>Light Issues...</p>xxx
-        </div>
-    </div>
+    <!-- New requests waiting for a decision -->
+    <section class="block" aria-labelledby="upcoming-title">
+      <h2 id="upcoming-title" class="block__title">
+        Upcoming requests
+        {% if upcoming %}<span class="block__count">{{ upcoming | length }}</span>{% endif %}
+      </h2>
 
-</body>
-</html>
+      {% if upcoming %}
+        <ul class="tickets">
+          {% for r in upcoming %}
+            <li>
+              <form class="ticket" method="post" aria-labelledby="ticket-{{ r.id }}">
+                <h3 class="ticket__place" id="ticket-{{ r.id }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21s-7-6.200-7-11.500A7 7 0 0 1 19 9.500C19 14.800 12 21 12 21z"/><circle cx="12" cy="9.500" r="2.500"/></svg>
+                  <span class="sr-only">Location: </span>{{ r.location }}
+                </h3>
+
+                <p class="ticket__label">Complaint</p>
+                <p class="ticket__text">{{ r.description }}</p>
+
+                <div class="ticket__actions">
+                  <button class="act act--accept" type="submit"
+                          formaction="{{ url_for('worker_request_action', request_id=r.id, action='accept') }}"
+                          aria-label="Accept request: {{ r.location }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>
+                    Accept
+                  </button>
+                  <button class="act act--decline" type="submit"
+                          formaction="{{ url_for('worker_request_action', request_id=r.id, action='decline') }}"
+                          aria-label="Decline request: {{ r.location }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 7l10 10M17 7L7 17"/></svg>
+                    Decline
+                  </button>
+                </div>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No new requests right now. New complaints assigned to you will show up here.</p>
+      {% endif %}
+    </section>
+
+    <!-- Everything handled before -->
+    <section class="block" aria-labelledby="past-title">
+      <h2 id="past-title" class="block__title">Previous requests</h2>
+
+      {% if past %}
+        <ul class="past">
+          {% for r in past %}
+            <li class="past__row">
+              <span class="past__title">{{ r.title }}</span>
+              <span class="status status--{{ r.status }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  {% if r.status == 'completed' %}<path d="M5 12.500l4.500 4.500L19 7.500"/>
+                  {% elif r.status == 'ongoing' %}<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/>
+                  {% elif r.status == 'rejected' %}<path d="M7 7l10 10M17 7L7 17"/>
+                  {% else %}<circle cx="12" cy="12" r="8.500"/><path d="M6 6l12 12"/>{% endif %}
+                </svg>
+                {{ statuses[r.status] }}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">You have no previous requests yet.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

@@ -1,166 +1,58 @@
-/* ZeroDayZ – worker profile page */
+/* ZeroDayZ – worker profile: a hanging staff pass + what needs attention */
 
 .profile {
   width: 100%;
   max-width: 1080px;
   margin: 0 auto;
-  padding: clamp(1.2rem, 4vw, 2.2rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vw, 3rem);
-}
-
-/* ---------- Identity ---------- */
-.identity {
-  --av: clamp(88px, 16vw, 124px);          /* avatar size */
-  overflow: hidden;
-  background: var(--white);
-  border: 3px solid var(--edge);
-  border-radius: 20px;
-  box-shadow: 0 20px 34px -24px rgba(10, 115, 137, .55);
-}
-
-.identity__banner {
-  position: relative;
-  height: clamp(120px, 22vw, 200px);
-  overflow: hidden;
-  background: linear-gradient(115deg, #bcedf2 0%, #c6e8fb 55%, #dcf0ff 100%);
-}
-
-/* The reversed Z: big, tilted and cropped by the banner edge */
-.zmark {
-  position: absolute;
-  bottom: -30%;
-  right: clamp(8px, 7vw, 100px);
-  width: clamp(120px, 22vw, 250px);
-  height: auto;
-  fill: rgba(255, 255, 255, .7);
-  transform: rotate(-24deg) scaleX(-1);
-}
-
-.identity__body {
-  display: flex;
-  align-items: flex-start;
-  gap: clamp(.9rem, 3vw, 1.5rem);
-  padding: 0 clamp(1rem, 3vw, 2rem) 1.5rem;
-}
-
-.avatar {
-  position: relative;
-  z-index: 1;                       /* sits on top of the banner */
-  flex: none;
+  padding: clamp(1.4rem, 4vw, 2.6rem) clamp(1rem, 4vw, 2rem) clamp(2.2rem, 5vw, 3.5rem);
   display: grid;
-  place-items: center;
-  width: var(--av);
-  height: var(--av);
-  margin-top: calc(var(--av) / -2);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: calc(var(--av) * .42);
-  color: var(--ink);
-  background: var(--face);
-  border: 5px solid var(--white);
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--edge);
+  gap: 1.8rem clamp(1.5rem, 5vw, 3.5rem);
+  grid-template-areas: "hero" "pass" "history" "about";
 }
-.avatar--photo { object-fit: cover; }
+.hero    { grid-area: hero; }
+.pass    { grid-area: pass; }
+.history { grid-area: history; }
+.about   { grid-area: about; }
 
-.identity__text { min-width: 0; padding-top: .9rem; }
-.identity__name {
+@media (min-width: 900px) {
+  .profile {
+    grid-template-columns: 330px 1fr;
+    grid-template-areas: "pass hero" "pass history" "pass about";
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+  }
+}
+
+/* ---------- Greeting and the one thing to act on ---------- */
+.hero__title {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(1.8rem, 5vw, 2.7rem);
-  line-height: 1.1;
-  letter-spacing: -.02em;
+  font-size: clamp(2.4rem, 7vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -.03em;
   overflow-wrap: anywhere;
 }
-
-.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .7rem 0 0; padding: 0; list-style: none; }
-.chip {
-  padding: .2rem .8rem;
-  font-size: .95rem;
-  font-weight: 600;
-  background: #dcf5f8;
-  border: 2px solid var(--edge);
-  border-radius: 999px;
+.hero__lead {
+  margin: .6rem 0 1.3rem;
+  font-size: clamp(1.15rem, 2.6vw, 1.4rem);
+  color: var(--ink-soft);
 }
-
-/* ---------- Panels ---------- */
-.panels { display: grid; gap: 1.2rem; margin-top: 1.2rem; }
-@media (min-width: 860px) {
-  .panels { grid-template-columns: 1fr 1fr; align-items: start; }
-}
-
-.card {
-  padding: clamp(1.2rem, 3vw, 1.8rem);
-  background: var(--white);
-  border: 2px solid var(--line);
-  border-radius: 16px;
-}
-.card__title {
-  margin: 0 0 .9rem;
+.hero__lead strong {
+  color: var(--ink);
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.35rem;
+  font-weight: 800;
+  font-size: 1.25em;
 }
 
-.about { margin: 0; max-width: 60ch; }
-.empty { margin: 0 0 1.2rem; color: var(--ink-soft); }
-
-/* ---------- Request summary ---------- */
-.total { margin: 0 0 .9rem; color: var(--ink-soft); }
-.total strong { color: var(--ink); font-size: 1.15em; }
-
-.bar {
-  display: flex;
-  gap: 3px;
-  height: 18px;
-  overflow: hidden;
-  background: #e8f6ff;
-  border-radius: 999px;
-}
-.bar__seg {
-  display: block;
-  height: 100%;
-  min-width: 6px;
-  transform-origin: left center;
-  animation: grow .9s var(--ease) backwards;
-  animation-delay: calc(.2s + var(--i, 0) * .12s);
-}
-.bar__seg--done     { background: #2a97ae; }
-.bar__seg--ongoing  { background: #3b9ee0; }
-.bar__seg--rejected { background: #e0705f; }
-
-.stats { display: grid; margin: 1rem 0 1.4rem; padding: 0; list-style: none; }
-.stats__row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: .8rem;
-  min-height: 52px;
-  border-bottom: 1px solid #e1f1f5;
-}
-.stats__row:last-child { border-bottom: 0; }
-.stats__icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-}
-.stats__icon svg { width: 18px; height: 18px; }
-.stats__row--done .stats__icon     { color: #0a7389; background: #dcf5f8; }
-.stats__row--ongoing .stats__icon  { color: #1672b3; background: #e3f4ff; }
-.stats__row--rejected .stats__icon { color: #9b2c1f; background: #fdeeee; }
-.stats__label { font-weight: 500; }
-.stats__value { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
-
-/* ---------- Button ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: .6rem 1.5rem;
+  min-height: 52px;
+  padding: .7rem 1.8rem;
   font-weight: 700;
+  font-size: 1.05rem;
   color: var(--white);
   text-decoration: none;
   background: var(--accent);
@@ -172,5 +64,227 @@
 .btn:active { transform: translateY(0); }
 @media (max-width: 420px) { .btn { width: 100%; } }
 
-/* ---------- Motion: the bar fills in once ---------- */
+/* ---------- Staff pass ---------- */
+.pass { justify-self: center; width: min(100%, 330px); }
+
+.pass__swing {
+  transform-origin: 50% 0;            /* swings from the top of the strap */
+  animation: swing 2s ease-in-out .15s backwards;
+  transition: transform .5s var(--ease);
+}
+@media (hover: hover) {
+  .pass__swing:hover { transform: rotate(1.6deg); }
+}
+
+.pass__strap {
+  position: relative;
+  z-index: 2;                         /* in front of the card so it threads the slot */
+  display: block;
+  width: 30px;
+  height: 54px;
+  margin: 0 auto -30px;
+  background: var(--edge);
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .45);
+}
+.pass__clip {                         /* little metal clip */
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 22px;
+  height: 18px;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 6px;
+}
+
+.pass__card {
+  position: relative;
+  overflow: hidden;
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 22px;
+  box-shadow: 0 26px 34px -24px rgba(10, 115, 137, .6);
+}
+
+.pass__top {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+  background: linear-gradient(120deg, #bcedf2 0%, #c9e8fb 60%, #dcf0ff 100%);
+}
+.pass__slot {                         /* punched slot the strap goes through */
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 60px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: var(--wash);
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+}
+.pass__z {                            /* big reversed Z, cropped by the card edge */
+  position: absolute;
+  right: -26px;
+  bottom: -44px;
+  width: 200px;
+  height: 200px;
+  fill: rgba(255, 255, 255, .75);
+  transform: rotate(-24deg) scaleX(-1);
+}
+
+.pass__body {
+  padding: 0 1.2rem 1.3rem;
+  text-align: center;
+}
+.avatar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin: -52px auto .7rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.6rem;
+  color: var(--ink);
+  background: var(--face);
+  border: 5px solid var(--white);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--edge);
+}
+.avatar--photo { object-fit: cover; }
+
+.pass__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.pass__role {
+  display: inline-block;
+  margin: .5rem 0 0;
+  padding: .15rem .9rem;
+  font-weight: 600;
+  font-size: .95rem;
+  background: #dcf5f8;
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+}
+.pass__id {
+  margin: .9rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: .06em;
+}
+.pass__id span {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: .9rem;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+
+.pass__foot {                         /* perforated tear-off strip */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  padding: .8rem 1rem;
+  font-size: .9rem;
+  color: var(--ink-soft);
+  background: #f0fafc;
+  border-top: 2px dashed #9fdbe6;
+}
+.pass__logo {
+  width: 24px;
+  height: 24px;
+  fill: var(--accent);
+  transform: scaleX(-1);
+}
+
+/* ---------- Sections ---------- */
+.section-title {
+  margin: 0 0 .5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+.history__total { margin: 0 0 .6rem; color: var(--ink-soft); }
+.history__total strong { color: var(--ink); }
+.empty { margin: 0; color: var(--ink-soft); }
+
+/* Request tally: one bar per status, so small numbers stay visible */
+.tally { margin: 0; padding: 0; list-style: none; }
+.tally__row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  grid-template-areas: "icon label num" ". track track";
+  align-items: center;
+  column-gap: .8rem;
+  row-gap: .35rem;
+  padding: .9rem 0;
+  border-bottom: 1px solid #d9eef3;
+}
+.tally__row:last-child { border-bottom: 0; }
+
+.tally__icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+.tally__icon svg { width: 20px; height: 20px; }
+.tally__label { grid-area: label; font-weight: 600; }
+.tally__pct { margin-left: .4rem; font-weight: 500; color: var(--ink-soft); }
+.tally__num {
+  grid-area: num;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+.tally__track {
+  grid-area: track;
+  height: 10px;
+  overflow: hidden;
+  background: #e4f3fb;
+  border-radius: 999px;
+}
+.tally__fill {
+  display: block;
+  width: max(var(--pct), 8px);
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+  animation: grow .9s var(--ease) backwards;
+  animation-delay: calc(.35s + var(--i, 0) * .12s);
+}
+.tally__row--completed .tally__icon { color: #0a7389; background: #dcf5f8; }
+.tally__row--completed .tally__fill { background: #2a97ae; }
+.tally__row--ongoing   .tally__icon { color: #1672b3; background: #e3f4ff; }
+.tally__row--ongoing   .tally__fill { background: #3b9ee0; }
+.tally__row--rejected  .tally__icon { color: #9b2c1f; background: #fdeeee; }
+.tally__row--rejected  .tally__fill { background: #e0705f; }
+
+.about__text { margin: 0; max-width: 56ch; font-size: 1.05rem; }
+
+/* ---------- Motion: the pass swings and settles once; bars fill once ---------- */
+@keyframes swing {
+  0%   { transform: rotate(-6deg); }
+  25%  { transform: rotate(4deg); }
+  50%  { transform: rotate(-2.4deg); }
+  75%  { transform: rotate(1.2deg); }
+  100% { transform: rotate(0deg); }
+}
 @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, redirect, render_template, request, url_for
 from jinja2 import TemplateNotFound
 from werkzeug.exceptions import NotFound
 
@@ -128,7 +128,16 @@ def get_past_requests():
     ]
 
 
-def render_requests(notice=None):
+ACTION_NOTICES = {
+    "accept": "You chose to accept this request. It was not saved yet, because requests are not connected to the database.",
+    "decline": "You chose to decline this request. It was not saved yet, because requests are not connected to the database.",
+}
+
+
+@app.route("/workers/requests")
+def worker_requests():
+    # `done` is only ever one of the two known actions, never printed as typed.
+    notice = ACTION_NOTICES.get(request.args.get("done", ""))
     return render_template(
         "workers/requests.html",
         upcoming=get_upcoming_requests(),
@@ -137,19 +146,13 @@ def render_requests(notice=None):
     )
 
 
-@app.route("/workers/requests")
-def worker_requests():
-    return render_requests()
-
-
 @app.route("/workers/requests/<int:request_id>/<action>", methods=["POST"])
 def worker_request_action(request_id, action):
-    if action not in ("accept", "decline"):
+    if action not in ACTION_NOTICES:
         abort(404)
     # TODO: save the worker's choice for this request in the database.
-    return render_requests(
-        notice="Your choice was not saved yet. Requests are not connected to the database."
-    )
+    # Redirect so that refreshing the page does not send the choice again.
+    return redirect(url_for("worker_requests", done=action), code=303)
 
 
 @app.route("/workers/about")
@@ -160,6 +163,53 @@ def worker_about():
 @app.route("/workers/contact")
 def worker_contact():
     return page("workers/contact.html")
+
+
+# ---------- Student area: pages shown after a student signs in ----------
+def get_current_student():
+    """SAMPLE DATA. TODO: load the signed-in student from the database."""
+    return {"name": "Student", "roll_number": "21B01A0001"}
+
+
+@app.route("/students/home")
+def student_home():
+    return render_template("students/home.html", student=get_current_student())
+
+
+# These pages are not built yet: they show the friendly 404 until their template exists.
+@app.route("/students/profile")
+def student_profile():
+    return page("students/profile.html")
+
+
+@app.route("/students/complaints/new")
+def student_new_complaint():
+    return page("students/new_complaint.html")
+
+
+@app.route("/students/complaints")
+def student_complaints():
+    return page("students/complaints.html")
+
+
+@app.route("/students/feedback")
+def student_feedback():
+    return page("students/feedback.html")
+
+
+@app.route("/students/suggestions")
+def student_suggestions():
+    return page("students/suggestions.html")
+
+
+@app.route("/students/contact")
+def student_contact():
+    return page("students/contact.html")
+
+
+@app.route("/students/about")
+def student_about():
+    return page("students/about.html")
 
 
 @app.errorhandler(404)

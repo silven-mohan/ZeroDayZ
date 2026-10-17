@@ -1,0 +1,39 @@
+/* ZeroDayZ – student area: shared colour set + header buttons.
+   Students use the sky-blue set, the same as the student sign-in page. */
+
+body.students {
+  --accent: #1672b3;        /* buttons, icons (5:1 with white) */
+  --accent-soft: #e3f4ff;   /* hover wash */
+  --face: var(--door-student);
+  --edge: var(--edge-student);
+  --line: #cfe7fa;          /* quiet borders */
+}
+
+.header-actions { display: flex; gap: .5rem; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 .8rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  transition: border-color .2s, background-color .2s;
+}
+.chip svg { width: 20px; height: 20px; }
+.chip:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* On small phones the buttons show just their icon (the label stays for screen readers) */
+@media (max-width: 420px) {
+  .chip__text {
+    position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap;
+  }
+  .chip { padding: 0; }
+}

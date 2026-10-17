@@ -1,0 +1,68 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}Home | ZeroDayZ student{% endblock %}
+{% block description %}Student home: raise a hostel complaint, follow your registered complaints and share feedback.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/home.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set actions = [
+  ('student_new_complaint', 'New complaint', 'Report a problem in your room or block.',
+   '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>'),
+  ('student_complaints', 'Registered complaints', 'See what you reported and where it stands.',
+   '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 12h6M9 16h4"/>'),
+  ('student_feedback', 'Student feedback', 'Tell us how a fix went.',
+   '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>')
+] %}
+{% set more = [
+  ('student_suggestions', 'Suggestions', 'Ideas to make the hostel better.',
+   '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.900c.6.5 1 1.200 1 2.100h5c0-.9.4-1.600 1-2.100A6 6 0 0 0 12 3z"/>'),
+  ('student_contact', 'Contact', 'Reach the hostel office.',
+   '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  ('student_about', 'About', 'How complaints are handled.',
+   '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>')
+] %}
+
+<div class="home">
+  <section class="welcome" aria-labelledby="welcome-title">
+    <svg class="welcome__z" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></svg>
+    <p class="welcome__small">Welcome back,</p>
+    <h1 class="welcome__title" id="welcome-title">{{ student.name }}</h1>
+    <p class="welcome__lead">Hostel complaint management. Report a problem, then follow it until it is fixed.</p>
+  </section>
+
+  <nav class="actions" aria-label="Main actions">
+    <ul class="actions__list">
+      {% for endpoint, title, text, icon in actions %}
+        <li style="--i: {{ loop.index0 }}">
+          <a class="action" href="{{ url_for(endpoint) }}">
+            <span class="action__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icon | safe }}</svg></span>
+            <span class="action__body">
+              <span class="action__title">{{ title }}</span>
+              <span class="action__text">{{ text }}</span>
+            </span>
+            <svg class="action__go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <nav class="more" aria-label="More">
+    <ul class="more__list">
+      {% for endpoint, title, text, icon in more %}
+        <li style="--i: {{ loop.index0 + 3 }}">
+          <a class="tile" href="{{ url_for(endpoint) }}">
+            <span class="tile__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icon | safe }}</svg></span>
+            <span class="tile__title">{{ title }}</span>
+            <span class="tile__text">{{ text }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

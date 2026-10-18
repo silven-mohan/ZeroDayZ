@@ -1,0 +1,192 @@
+/* ZeroDayZ – student profile: just the ID card, hanging from a lanyard */
+
+.profile {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.8rem) clamp(1rem, 4vw, 2rem) clamp(2.2rem, 5vw, 3.5rem);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: 0 .9rem 0 .6rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background-color .2s;
+}
+.back svg { width: 20px; height: 20px; transition: transform .25s var(--ease); }
+.back:hover { background: var(--accent-soft); }
+.back:hover svg { transform: translateX(-3px); }
+
+.hang { display: grid; justify-items: center; margin-top: .4rem; }
+
+.swing {
+  width: min(100%, 360px);
+  transform-origin: 50% 0;                /* swings from the top of the strap */
+  animation: swing 2s ease-in-out .15s backwards;
+  transition: transform .5s var(--ease);
+}
+@media (hover: hover) { .swing:hover { transform: rotate(1.6deg); } }
+
+.strap {
+  position: relative;
+  z-index: 2;                             /* in front of the card so it threads the slot */
+  display: block;
+  width: 30px;
+  height: 60px;
+  margin: 0 auto -30px;
+  background: var(--edge);
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .45);
+}
+.strap__clip {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 22px;
+  height: 18px;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 6px;
+}
+
+/* ---------- The card ---------- */
+.id {
+  position: relative;
+  overflow: hidden;
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 24px;
+  box-shadow: 0 28px 36px -26px rgba(22, 114, 179, .65);
+}
+
+.id__top {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--door-student) 0%, #d3ebff 60%, #e6f4ff 100%);
+}
+.id__slot {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 60px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: var(--wash);
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+}
+.id__z {
+  position: absolute;
+  right: -28px;
+  bottom: -46px;
+  width: 200px;
+  height: 200px;
+  fill: rgba(255, 255, 255, .7);
+  transform: rotate(-24deg) scaleX(-1);
+}
+.id__org {
+  position: absolute;
+  left: 1.2rem;
+  top: 2.9rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.id__body { padding: 0 1.4rem 1.2rem; text-align: center; }
+
+.avatar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin: -56px auto .7rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.8rem;
+  color: var(--ink);
+  background: var(--face);
+  border: 5px solid var(--white);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--edge);
+}
+.avatar--photo { object-fit: cover; }
+
+.id__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.id__badge {
+  display: inline-block;
+  margin: .5rem 0 0;
+  padding: .15rem .9rem;
+  font-weight: 600;
+  font-size: .95rem;
+  background: var(--accent-soft);
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+}
+
+/* ---------- Details ---------- */
+.facts { margin: 1.2rem 0 0; text-align: left; }
+.facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .6rem 0;
+  border-bottom: 1px solid #dcecf7;
+}
+.facts > div:last-child { border-bottom: 0; }
+.facts dt { flex: none; font-size: .9rem; color: var(--ink-soft); }
+.facts dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.facts dd a { color: inherit; text-decoration: none; }
+.facts dd a:hover { text-decoration: underline; }
+.facts__roll { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; letter-spacing: .06em; }
+
+/* ---------- Tear-off strip with a decorative barcode ---------- */
+.id__foot {
+  display: grid;
+  justify-items: center;
+  gap: .3rem;
+  padding: .9rem 1rem 1rem;
+  background: #f2faff;
+  border-top: 2px dashed #9fcff2;
+}
+.bars {
+  width: min(100%, 240px);
+  height: 38px;
+  background: repeating-linear-gradient(90deg,
+    var(--ink) 0 2px, transparent 2px 5px,
+    var(--ink) 5px 6px, transparent 6px 9px,
+    var(--ink) 9px 12px, transparent 12px 14px);
+  opacity: .8;
+}
+.id__code { font-size: .8rem; letter-spacing: .22em; color: var(--ink-soft); }
+
+@keyframes swing {
+  0%   { transform: rotate(-6deg); }
+  25%  { transform: rotate(4deg); }
+  50%  { transform: rotate(-2.4deg); }
+  75%  { transform: rotate(1.2deg); }
+  100% { transform: rotate(0deg); }
+}

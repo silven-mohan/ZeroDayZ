@@ -168,7 +168,18 @@ def worker_contact():
 # ---------- Student area: pages shown after a student signs in ----------
 def get_current_student():
     """SAMPLE DATA. TODO: load the signed-in student from the database."""
-    return {"name": "Student", "roll_number": "21B01A0001"}
+    name = "Swejo"
+    return {
+        "name": name,
+        "initials": "".join(part[0] for part in name.split()[:2]).upper(),
+        "roll_number": "21B01A0001",
+        "course": "B.Tech, Computer Science",
+        "year": "2nd year",
+        "block": "Hostel Block-I",
+        "room": "26",
+        "mobile": "98765 43210",
+        "photo": None,  # URL of an uploaded photo; None shows the initials instead
+    }
 
 
 @app.route("/students/home")
@@ -179,7 +190,7 @@ def student_home():
 # These pages are not built yet: they show the friendly 404 until their template exists.
 @app.route("/students/profile")
 def student_profile():
-    return page("students/profile.html")
+    return render_template("students/profile.html", student=get_current_student())
 
 
 # What each category covers (shown on the registered complaints page).

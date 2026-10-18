@@ -182,9 +182,14 @@ def student_profile():
     return page("students/profile.html")
 
 
-COMPLAINT_CATEGORIES = [
-    "Electrical", "Plumbing", "Furniture", "Cleaning", "Internet / Wi-Fi", "Other",
-]
+# What each category covers (shown on the registered complaints page).
+CATEGORY_HINTS = {
+    "Plumbing": "Leaks, taps, toilets, water supply, drainage",
+    "Electrical": "Fans, tube lights, power issues, switches, AC, heater",
+    "Maintenance": "Room cleaning, windows, doors, furniture",
+    "Other": "Pest control, food, regular check-ups",
+}
+COMPLAINT_CATEGORIES = list(CATEGORY_HINTS)
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 # First bytes of real JPEG / PNG / WebP files (the file name alone is not trusted).
 PHOTO_SIGNATURES = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n", b"RIFF")
@@ -247,9 +252,48 @@ def student_new_complaint():
     )
 
 
+STATUS_LABELS = {
+    "pending": "Waiting",
+    "ongoing": "In progress",
+    "completed": "Fixed",
+    "rejected": "Not accepted",
+}
+
+
+def get_student_complaints():
+    """SAMPLE DATA. TODO: load this student's complaints from the database.
+    status is one of: pending, ongoing, completed, rejected"""
+    return [
+        {"ref": "#1004", "category": "Electrical", "location": "Room No. 228",
+         "description": "Lights not working.", "date": "15 Oct 2026", "status": "pending"},
+        {"ref": "#1003", "category": "Other", "location": "Room No. 26",
+         "description": "Broken door.", "date": "12 Oct 2026", "status": "ongoing"},
+        {"ref": "#1002", "category": "Plumbing", "location": "Washroom",
+         "description": "No water from the tap.", "date": "9 Oct 2026", "status": "completed"},
+        {"ref": "#1001", "category": "Plumbing", "location": "Washroom",
+         "description": "Water leakage from the tap.", "date": "2 Oct 2026", "status": "completed"},
+    ]
+
+
 @app.route("/students/complaints")
 def student_complaints():
-    return page("students/complaints.html")
+    everything = get_student_complaints()
+    # `category` is only used when it is one of the known names.
+    selected = request.args.get("category", "")
+    if selected not in COMPLAINT_CATEGORIES:
+        selected = ""
+    categories = [
+        {"name": name, "hint": hint, "count": sum(1 for c in everything if c["category"] == name)}
+        for name, hint in CATEGORY_HINTS.items()
+    ]
+    shown = [c for c in everything if not selected or c["category"] == selected]
+    return render_template(
+        "students/complaints.html",
+        categories=categories,
+        complaints=shown,
+        selected=selected,
+        status_labels=STATUS_LABELS,
+    )
 
 
 @app.route("/students/feedback")

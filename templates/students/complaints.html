@@ -1,0 +1,118 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}Registered complaints | ZeroDayZ student{% endblock %}
+{% block description %}Track every hostel complaint you have registered, filter by category and see where each one stands.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/complaints.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set icons = {
+  'All':         '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+  'Plumbing':    '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  'Electrical':  '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+  'Maintenance': '<path d="M14.5 6.5a4 4 0 0 0-5 5L3.5 17.5a2 2 0 0 0 3 3l6-6a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+  'Other':       '<circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>'
+} %}
+{% macro icon(name) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icons[name] | safe }}</svg>{% endmacro %}
+
+{% set total = categories | sum(attribute='count') %}
+{% set step_labels = ['Received', 'In progress', 'Fixed'] %}
+
+<div class="registered">
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+
+  <header class="banner">
+    <svg class="banner__z" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></svg>
+    <div class="banner__text">
+      <h1 class="banner__title">Registered complaints</h1>
+      <p class="banner__lead">Track all your complaints in one place. We are here to help.</p>
+    </div>
+    <a class="banner__cta" href="{{ url_for('student_new_complaint') }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      New complaint
+    </a>
+  </header>
+
+  <nav class="filters" aria-label="Filter by category">
+    <ul class="filters__list">
+      <li>
+        <a class="chip" {% if not selected %}aria-current="true"{% endif %} href="{{ url_for('student_complaints') }}">
+          <span class="chip__icon">{{ icon('All') }}</span>
+          <span class="chip__name">All</span>
+          <span class="chip__count">{{ total }}<span class="sr-only"> complaint{{ '' if total == 1 else 's' }}</span></span>
+        </a>
+      </li>
+      {% for c in categories %}
+      {% set on = (selected == c.name) %}
+      <li>
+        <a class="chip chip--{{ c.name | lower }}" {% if on %}aria-current="true" href="{{ url_for('student_complaints') }}"{% else %}href="{{ url_for('student_complaints', category=c.name) }}"{% endif %}>
+          <span class="chip__icon">{{ icon(c.name) }}</span>
+          <span class="chip__name">{{ c.name }}</span>
+          <span class="chip__count">{{ c.count }}<span class="sr-only"> complaint{{ '' if c.count == 1 else 's' }}</span></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% for c in categories if c.name == selected %}
+    <p class="filters__hint">{{ c.hint }}. Select {{ c.name }} again to show every complaint.</p>
+    {% endfor %}
+  </nav>
+
+  <section class="list" aria-labelledby="list-title">
+    <h2 class="list__title" id="list-title">
+      {% if selected %}{{ selected }} complaints{% else %}All complaints{% endif %}
+      <span class="list__total">{{ complaints | length }}</span>
+    </h2>
+
+    {% if complaints %}
+    <ul class="items">
+      {% for item in complaints %}
+      <li class="item item--{{ item.category | lower }}">
+        <div class="item__main">
+          <p class="item__tag"><span class="item__icon">{{ icon(item.category) }}</span>{{ item.category }}</p>
+          <h3 class="item__place">{{ item.location }}</h3>
+          <p class="item__text">{{ item.description }}</p>
+          <dl class="item__meta">
+            <div><dt>Complaint</dt><dd>{{ item.ref }}</dd></div>
+            <div><dt>Raised</dt><dd>{{ item.date }}</dd></div>
+          </dl>
+        </div>
+
+        <div class="item__state">
+          <span class="status status--{{ item.status }}">
+            {% if item.status == 'completed' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg>
+            {% elif item.status == 'ongoing' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+            {% elif item.status == 'pending' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12M6 21h12M8 3v4l4 5-4 5v4M16 3v4l-4 5 4 5v4"/></svg>
+            {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>{% endif %}
+            {{ status_labels[item.status] }}
+          </span>
+
+          {% if item.status != 'rejected' %}
+          {% set step = {'pending': 1, 'ongoing': 2, 'completed': 3}[item.status] %}
+          <ol class="steps" aria-label="Progress: step {{ step }} of 3">
+            {% for label in step_labels %}
+            <li class="{% if loop.index < step or step == 3 %}is-done{% elif loop.index == step %}is-current{% endif %}"{% if loop.index == step %} aria-current="step"{% endif %}>{{ label }}</li>
+            {% endfor %}
+          </ol>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">
+      <p class="empty__text">{% if selected %}You have no {{ selected | lower }} complaints.{% else %}You have not registered any complaints yet.{% endif %}</p>
+      <a class="empty__cta" href="{{ url_for('student_new_complaint') }}">Register a complaint</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+{% include "partials/scene.html" %}
+{% endblock %}

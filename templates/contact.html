@@ -1,0 +1,52 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}Contact | ZeroDayZ student{% endblock %}
+{% block description %}Phone numbers and email for the hostel warden, the hostel office and security.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/form_base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/contact.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set icons = {
+  'phone': '<path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  'mail':  '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  'alert': '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'
+} %}
+<div class="page">
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+
+  <section class="card" aria-labelledby="page-title">
+    <h1 class="card__title" id="page-title">Contact</h1>
+    <p class="card__lead">Reach the people who run the hostel. Tap a number to call, or an address to write an email.</p>
+
+    <ul class="contacts">
+      {% for c in contacts %}
+      <li class="contact {% if c.urgent %}contact--urgent{% endif %}" style="--i: {{ loop.index0 }}">
+        <span class="contact__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icons[c.icon] | safe }}</svg></span>
+        <h2 class="contact__role">{{ c.role }}</h2>
+        <p class="contact__note">{{ c.note }}</p>
+        {% if c.phone %}<a class="contact__link" href="tel:{{ c.phone | replace(' ', '') }}">{{ c.phone }}</a>{% endif %}
+        {% if c.email %}<a class="contact__link" href="mailto:{{ c.email }}">{{ c.email }}</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <dl class="hours" aria-label="Hostel office hours">
+      {% for days, time in hours %}
+      <div><dt>{{ days }}</dt><dd>{{ time }}</dd></div>
+      {% endfor %}
+    </dl>
+
+    <div class="nudge">
+      <p>Something broken in your room or block? A registered complaint is the quickest way to get it fixed and to follow its progress.</p>
+      <a class="btn" href="{{ url_for('student_new_complaint') }}">Register a complaint</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

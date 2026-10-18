@@ -168,7 +168,7 @@ def worker_contact():
 # ---------- Student area: pages shown after a student signs in ----------
 def get_current_student():
     """SAMPLE DATA. TODO: load the signed-in student from the database."""
-    name = "Swejo"
+    name = "Ravi Kumar"
     return {
         "name": name,
         "initials": "".join(part[0] for part in name.split()[:2]).upper(),
@@ -307,19 +307,83 @@ def student_complaints():
     )
 
 
-@app.route("/students/feedback")
+@app.route("/students/feedback", methods=["GET", "POST"])
 def student_feedback():
-    return page("students/feedback.html")
+    # Feedback can only be given on complaints that were fixed.
+    eligible = [c for c in get_student_complaints() if c["status"] == "completed"]
+    errors = {}
+    values = {"complaint": "", "rating": "", "solved": "", "comment": ""}
+
+    if request.method == "POST":
+        for key in values:
+            values[key] = request.form.get(key, "").strip()
+        if values["complaint"] not in {c["ref"] for c in eligible}:
+            errors["complaint"] = "Choose the complaint this is about."
+        if values["rating"] not in {"1", "2", "3", "4", "5"}:
+            errors["rating"] = "Choose a star rating."
+        if values["solved"] not in {"yes", "no"}:
+            errors["solved"] = "Say whether the problem is solved."
+        if len(values["comment"]) > 500:
+            errors["comment"] = "Keep your comments under 500 characters."
+        if not errors:
+            # TODO: save the feedback for this student and complaint.
+            return redirect(url_for("student_feedback", sent=1), code=303)
+
+    return render_template(
+        "students/feedback.html",
+        eligible=eligible, errors=errors, values=values,
+        sent=request.args.get("sent") == "1",
+    )
 
 
-@app.route("/students/suggestions")
+SUGGESTION_TOPICS = ["Hostel facilities", "Safety", "Cleanliness", "Other"]
+
+
+@app.route("/students/suggestions", methods=["GET", "POST"])
 def student_suggestions():
-    return page("students/suggestions.html")
+    errors = {}
+    values = {"topic": "", "title": "", "suggestion": "", "anonymous": ""}
+
+    if request.method == "POST":
+        for key in values:
+            values[key] = request.form.get(key, "").strip()
+        if values["topic"] not in SUGGESTION_TOPICS:
+            errors["topic"] = "Choose a topic."
+        if not 3 <= len(values["title"]) <= 80:
+            errors["title"] = "Give your suggestion a short title (3 to 80 characters)."
+        if len(values["suggestion"]) < 10:
+            errors["suggestion"] = "Write your suggestion in at least 10 characters."
+        elif len(values["suggestion"]) > 500:
+            errors["suggestion"] = "Keep your suggestion under 500 characters."
+        if not errors:
+            # TODO: save the suggestion (leave the student out when values["anonymous"] is set).
+            return redirect(url_for("student_suggestions", sent=1), code=303)
+
+    return render_template(
+        "students/suggestions.html",
+        topics=SUGGESTION_TOPICS, errors=errors, values=values,
+        sent=request.args.get("sent") == "1",
+    )
+
+
+def get_hostel_contacts():
+    """SAMPLE DATA: replace these placeholder numbers and addresses with the real ones."""
+    contacts = [
+        {"role": "Hostel warden", "note": "Rooms, rules and anything serious.", "icon": "phone",
+         "phone": "98765 00001", "email": "warden@example.com", "urgent": False},
+        {"role": "Hostel office", "note": "Complaint follow-ups and paperwork.", "icon": "mail",
+         "phone": "98765 00002", "email": "office@example.com", "urgent": False},
+        {"role": "Security and emergencies", "note": "Open all day and night.", "icon": "alert",
+         "phone": "98765 00003", "email": None, "urgent": True},
+    ]
+    hours = [("Monday to Saturday", "9:00 am to 5:00 pm"), ("Sunday", "Closed (security only)")]
+    return contacts, hours
 
 
 @app.route("/students/contact")
 def student_contact():
-    return page("students/contact.html")
+    contacts, hours = get_hostel_contacts()
+    return render_template("contact.html", contacts=contacts, hours=hours)
 
 
 @app.route("/students/about")

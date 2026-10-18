@@ -1,0 +1,77 @@
+/* ZeroDayZ – student feedback: star rating, yes/no choice, empty state */
+
+/* Rating: five tiles, each a star with its word. Real radio buttons underneath, so the
+   keyboard (arrow keys) and screen readers work. Choosing a tile lights up that tile and
+   every tile before it. */
+.rating { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; max-width: 520px; }
+.rating input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.rating label {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .3rem;
+  min-height: 84px;
+  margin: 0;
+  padding: .6rem .2rem;
+  color: var(--ink);
+  background: #f2faff;
+  border: 2px solid #b7d7ee;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, transform .2s var(--ease);
+}
+.rating label svg {
+  width: 30px;
+  height: 30px;
+  fill: transparent;
+  stroke: #6fa6d1;                         /* empty star: outline only */
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+  transition: fill .15s, stroke .15s;
+}
+.rating__word { font-size: clamp(.68rem, 2.7vw, .85rem); font-weight: 600; line-height: 1.1; }
+
+/* chosen tile and the tiles before it */
+.rating input:checked + label,
+.rating label:has(~ input:checked) { background: #fff3d1; border-color: #e5a100; }
+.rating input:checked + label svg,
+.rating label:has(~ input:checked) svg { fill: #f5b82e; stroke: #c98800; }
+.rating input:checked + label .rating__word { font-weight: 800; }
+.rating input:checked + label { box-shadow: 0 0 0 2px #e5a100; }
+.rating input:focus-visible + label { outline: 3px solid var(--blue-600); outline-offset: 3px; }
+
+/* Preview while the mouse is over the tiles (not on touch screens, where hover sticks) */
+@media (hover: hover) {
+  /* ".rating.rating" repeats the class on purpose: it makes these rules win over the chosen rules */
+  .rating.rating:hover label { background: #f2faff; border-color: #b7d7ee; box-shadow: none; }
+  .rating.rating:hover label svg { fill: transparent; stroke: #6fa6d1; }
+  .rating.rating:hover label:hover,
+  .rating.rating:hover label:has(~ label:hover) { background: #fff3d1; border-color: #e5a100; }
+  .rating.rating:hover label:hover svg,
+  .rating.rating:hover label:has(~ label:hover) svg { fill: #f5b82e; stroke: #c98800; }
+  .rating label:hover { transform: translateY(-2px); }
+}
+
+/* Yes / No choice drawn as two pills */
+.choices { display: flex; flex-wrap: wrap; gap: .6rem; }
+.choices input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.choices label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 1.4rem;
+  font-weight: 600;
+  background: #f2faff;
+  border: 2px solid var(--field-edge);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.choices label:hover { background: var(--white); }
+.choices input:checked + label { color: var(--white); background: var(--accent); border-color: var(--accent); }
+.choices input:focus-visible + label { outline: 3px solid var(--blue-600); outline-offset: 2px; }
+
+/* ---------- Empty state ---------- */
+.empty { margin: 0; padding: 1.2rem; background: #f2faff; border: 2px dashed var(--line); border-radius: 16px; }
+.empty a { margin-left: .4rem; color: var(--accent); font-weight: 700; }

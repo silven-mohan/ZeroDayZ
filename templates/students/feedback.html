@@ -1,0 +1,96 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}Student feedback | ZeroDayZ student{% endblock %}
+{% block description %}Tell the hostel how a fixed complaint went: rate the work and say whether the problem is really solved.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/form_base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/feedback.css') }}">
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/form_page.js') }}" defer></script>{% endblock %}
+
+{% block content %}
+<div class="page">
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+
+  <section class="card" aria-labelledby="page-title">
+    <h1 class="card__title" id="page-title">Student feedback</h1>
+    <p class="card__lead">Tell us how a fixed complaint went. Your answer helps the staff do better next time.</p>
+
+    {% if sent %}
+    <div class="alert alert--ok" role="status">Thank you for your feedback. It was not saved yet, because feedback is not connected to the database.</div>
+    {% endif %}
+
+    {% if errors %}
+    <div class="alert alert--error" id="form-errors" role="alert" tabindex="-1">
+      <p class="alert__title">Please fix the following</p>
+      <ul>{% for field, message in errors.items() %}<li><a href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    {% if not eligible %}
+      <p class="empty">You have no fixed complaints to give feedback on yet.
+        <a href="{{ url_for('student_complaints') }}">See my complaints</a></p>
+    {% else %}
+    <form class="form" method="post" action="{{ url_for('student_feedback') }}" novalidate>
+      <div class="form__fields">
+        <div class="field">
+          <label for="complaint">Which complaint?</label>
+          <div class="select">
+            <select id="complaint" name="complaint" required {% if errors.complaint %}aria-invalid="true" aria-describedby="complaint-error"{% endif %}>
+              <option value="" {% if not values.complaint %}selected{% endif %}>Choose a fixed complaint</option>
+              {% for c in eligible %}
+              <option value="{{ c.ref }}" {% if values.complaint == c.ref %}selected{% endif %}>{{ c.ref }} · {{ c.category }} · {{ c.location }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if errors.complaint %}<p class="field__error" id="complaint-error">{{ errors.complaint }}</p>{% endif %}
+        </div>
+
+        <fieldset class="field" id="rating" {% if errors.rating %}aria-describedby="rating-error"{% endif %}>
+          <legend>How was the work?</legend>
+          <div class="rating">
+            {% for n, word in [(1, 'Poor'), (2, 'Fair'), (3, 'Okay'), (4, 'Good'), (5, 'Excellent')] %}
+            <input type="radio" id="star{{ n }}" name="rating" value="{{ n }}" {% if values.rating == n|string %}checked{% endif %}>
+            <label for="star{{ n }}">
+              <span class="sr-only">{{ n }} star{{ '' if n == 1 else 's' }}, </span>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.500l2.900 6 6.600.9-4.800 4.600 1.200 6.500L12 17.300l-5.900 3.200 1.200-6.500L2.500 9.400l6.600-.9z"/></svg>
+              <span class="rating__word">{{ word }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% if errors.rating %}<p class="field__error" id="rating-error">{{ errors.rating }}</p>{% endif %}
+        </fieldset>
+
+        <fieldset class="field" id="solved" {% if errors.solved %}aria-describedby="solved-error"{% endif %}>
+          <legend>Is the problem solved?</legend>
+          <div class="choices">
+            <input type="radio" id="solved-yes" name="solved" value="yes" {% if values.solved == 'yes' %}checked{% endif %}>
+            <label for="solved-yes">Yes, solved</label>
+            <input type="radio" id="solved-no" name="solved" value="no" {% if values.solved == 'no' %}checked{% endif %}>
+            <label for="solved-no">No, still there</label>
+          </div>
+          {% if errors.solved %}<p class="field__error" id="solved-error">{{ errors.solved }}</p>{% endif %}
+        </fieldset>
+
+        <div class="field">
+          <label for="comment">Comments <span class="optional">(optional)</span></label>
+          <textarea id="comment" name="comment" rows="5" maxlength="500" placeholder="What went well, and what could be better?"
+                    aria-describedby="comment-count{% if errors.comment %} comment-error{% endif %}"
+                    {% if errors.comment %}aria-invalid="true"{% endif %}>{{ values.comment }}</textarea>
+          <p class="field__count" id="comment-count"><span data-count>{{ values.comment|length }}</span> / 500</p>
+          {% if errors.comment %}<p class="field__error" id="comment-error">{{ errors.comment }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="form__submit"><button class="btn" type="submit">Send feedback</button></div>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

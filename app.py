@@ -155,16 +155,6 @@ def worker_request_action(request_id, action):
     return redirect(url_for("worker_requests", done=action), code=303)
 
 
-@app.route("/workers/about")
-def worker_about():
-    return page("workers/about.html")
-
-
-@app.route("/workers/contact")
-def worker_contact():
-    return page("workers/contact.html")
-
-
 # ---------- Student area: pages shown after a student signs in ----------
 def get_current_student():
     """SAMPLE DATA. TODO: load the signed-in student from the database."""
@@ -336,7 +326,7 @@ def student_feedback():
     )
 
 
-SUGGESTION_TOPICS = ["Hostel facilities", "Safety", "Cleanliness", "Other"]
+SUGGESTION_TOPICS = ["Hostel facilities", "Safety", "Cleanliness", "Rules and timings", "Other"]
 
 
 @app.route("/students/suggestions", methods=["GET", "POST"])
@@ -366,6 +356,34 @@ def student_suggestions():
     )
 
 
+# ---------- About and Contact: one page each, shared by students and workers ----------
+# The pages live in templates/shared/. Only the surrounding layout (header buttons, menu)
+# and one call-to-action change with the role.
+def shared_layout(role):
+    """Return the layout, menu highlight and call-to-action for a signed-in role."""
+    if role == "worker":
+        return {
+            "role": "worker",
+            "layout": "workers/base_workers.html",
+            "cta": {
+                "text": "Waiting on a request? Open your requests to accept or decline new ones.",
+                "label": "Open requests",
+                "url": url_for("worker_requests"),
+            },
+            "contact_url": url_for("worker_contact"),
+        }
+    return {
+        "role": "student",
+        "layout": "students/base_students.html",
+        "cta": {
+            "text": "Something broken in your room or block? A registered complaint is the quickest way to get it fixed and to follow its progress.",
+            "label": "Register a complaint",
+            "url": url_for("student_new_complaint"),
+        },
+        "contact_url": url_for("student_contact"),
+    }
+
+
 def get_hostel_contacts():
     """SAMPLE DATA: replace these placeholder numbers and addresses with the real ones."""
     contacts = [
@@ -380,15 +398,47 @@ def get_hostel_contacts():
     return contacts, hours
 
 
-@app.route("/students/contact")
-def student_contact():
+def get_developer_contact():
+    """SAMPLE DATA: the person who looks after the ZeroDayZ website itself."""
+    return {
+        "name": "ZeroDayZ developer",
+        "note": "Found a bug, cannot sign in, or see wrong information on this website? Write to the developer. For problems with a room or facility, use a complaint instead.",
+        "email": "developer@example.com",
+        "phone": None,
+    }
+
+
+def about_page(role):
+    return render_template("about.html", active="about", **shared_layout(role))
+
+
+def contact_page(role):
     contacts, hours = get_hostel_contacts()
-    return render_template("contact.html", contacts=contacts, hours=hours)
+    return render_template(
+        "contact.html",
+        active="contact", contacts=contacts, hours=hours,
+        developer=get_developer_contact(), **shared_layout(role),
+    )
 
 
 @app.route("/students/about")
 def student_about():
-    return page("students/about.html")
+    return about_page("student")
+
+
+@app.route("/students/contact")
+def student_contact():
+    return contact_page("student")
+
+
+@app.route("/workers/about")
+def worker_about():
+    return about_page("worker")
+
+
+@app.route("/workers/contact")
+def worker_contact():
+    return contact_page("worker")
 
 
 @app.errorhandler(404)

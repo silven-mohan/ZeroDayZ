@@ -1,0 +1,140 @@
+{% extends layout %}
+{#
+  One About page for students AND workers.
+  The route (app.py: about_page) passes `layout` (which base template to wrap it in),
+  `role`, and `contact_url`. Nothing in this file is specific to one role.
+#}
+
+{% block title %}About | ZeroDayZ{% endblock %}
+{% block description %}How ZeroDayZ hostel complaint management works for students, staff and admins.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/about.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set icon = {
+  'pen':    '<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',
+  'person': '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  'check':  '<circle cx="12" cy="12" r="9"/><path d="M8 12.500l3 3 5-6"/>',
+  'eye':    '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  'lock':   '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  'phone':  '<rect x="7" y="2" width="10" height="20" rx="2.500"/><path d="M11 18h2"/>',
+  'bolt':   '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+  'school': '<path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11.500V16c0 1.500 3 3 6 3s6-1.500 6-3v-4.500"/>',
+  'tool':   '<path d="M14.500 6.500a4 4 0 0 0-5 5L3.500 17.500a2 2 0 0 0 3 3l6-6a4 4 0 0 0 5-5l-2.500 2.500-2.500-.5-.5-2.500z"/>',
+  'shield': '<path d="M12 3l8 3v6c0 4.500-3.500 8-8 9-4.500-1-8-4.500-8-9V6z"/><path d="M9 12l2 2 4-4"/>'
+} %}
+{% macro svg(name) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icon[name] | safe }}</svg>{% endmacro %}
+
+<div class="info">
+  {% if role == 'student' %}
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+  {% endif %}
+
+  <header class="banner">
+    <svg class="banner__z" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></svg>
+    <h1 class="banner__title">About ZeroDayZ</h1>
+    <p class="banner__lead">A simple way for the hostel to hear about problems and to fix them, with everyone able to see what is happening.</p>
+  </header>
+
+  <section class="block" aria-labelledby="how-title">
+    <h2 class="block__title" id="how-title">How it works</h2>
+    <ol class="flow">
+      <li class="flow__step" style="--i: 0">
+        <span class="flow__num" aria-hidden="true">1</span>
+        <span class="flow__icon">{{ svg('pen') }}</span>
+        <h3>Register</h3>
+        <p>A student describes the problem, says where it is and can add a photo.</p>
+      </li>
+      <li class="flow__step" style="--i: 1">
+        <span class="flow__num" aria-hidden="true">2</span>
+        <span class="flow__icon">{{ svg('person') }}</span>
+        <h3>Assigned</h3>
+        <p>The complaint goes to the right staff member, who accepts it and starts the work.</p>
+      </li>
+      <li class="flow__step" style="--i: 2">
+        <span class="flow__num" aria-hidden="true">3</span>
+        <span class="flow__icon">{{ svg('check') }}</span>
+        <h3>Fixed</h3>
+        <p>The staff member marks it done, and the student says whether it is really solved.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block" aria-labelledby="who-title">
+    <h2 class="block__title" id="who-title">Who uses it</h2>
+    <ul class="roles">
+      <li class="role role--student" style="--i: 0">
+        <span class="role__icon">{{ svg('school') }}</span>
+        <h3>Students</h3>
+        <ul>
+          <li>Register a complaint in a minute</li>
+          <li>Follow it from received to fixed</li>
+          <li>Give feedback and suggestions</li>
+        </ul>
+      </li>
+      <li class="role role--staff" style="--i: 1">
+        <span class="role__icon">{{ svg('tool') }}</span>
+        <h3>Staff</h3>
+        <ul>
+          <li>See new requests as they arrive</li>
+          <li>Accept or decline each one</li>
+          <li>Keep a record of finished work</li>
+        </ul>
+      </li>
+      <li class="role role--admin" style="--i: 2">
+        <span class="role__icon">{{ svg('shield') }}</span>
+        <h3>Admins</h3>
+        <ul>
+          <li>Oversee every complaint</li>
+          <li>Send work to the right people</li>
+          <li>Spot problems that keep coming back</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="promise-title">
+    <h2 class="block__title" id="promise-title">What we aim for</h2>
+    <ul class="promises">
+      <li style="--i: 0"><span class="promises__icon">{{ svg('eye') }}</span><div><h3>Clear progress</h3><p>Every complaint shows its status in words, so nobody has to ask.</p></div></li>
+      <li style="--i: 1"><span class="promises__icon">{{ svg('bolt') }}</span><div><h3>Quick to use</h3><p>A few fields, no paperwork, and nothing to install.</p></div></li>
+      <li style="--i: 2"><span class="promises__icon">{{ svg('lock') }}</span><div><h3>Private</h3><p>Phone numbers and photos are only for the people handling the complaint.</p></div></li>
+      <li style="--i: 3"><span class="promises__icon">{{ svg('phone') }}</span><div><h3>Works on any device</h3><p>Built for phones first, and fine on a laptop too.</p></div></li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="faq-title">
+    <h2 class="block__title" id="faq-title">Common questions</h2>
+    <div class="faq">
+      <details>
+        <summary>What can be reported?</summary>
+        <p>Anything about the hostel that needs fixing: plumbing (leaks, taps, drainage), electrical (fans, lights, switches), maintenance (doors, windows, furniture) and other problems such as pests.</p>
+      </details>
+      <details>
+        <summary>Where do I see progress?</summary>
+        <p>Every complaint shows one of four states: waiting, in progress, fixed or not accepted. Students find them under Registered complaints.</p>
+      </details>
+      <details>
+        <summary>Who can see my phone number and photo?</summary>
+        <p>Only the staff and admins who handle your complaint. They are used to reach you and to understand the problem.</p>
+      </details>
+      <details>
+        <summary>What if it is an emergency?</summary>
+        <p>Do not wait for a complaint to be picked up. Call security straight away from the <a href="{{ contact_url }}">Contact page</a>.</p>
+      </details>
+      <details>
+        <summary>Something on this website looks wrong</summary>
+        <p>Write to the developer. The address is on the <a href="{{ contact_url }}">Contact page</a>.</p>
+      </details>
+    </div>
+  </section>
+</div>
+
+{% include "partials/scene.html" %}
+{% endblock %}

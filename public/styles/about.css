@@ -1,0 +1,218 @@
+/* ZeroDayZ – About (the same page for students and workers).
+   Self-contained: colours come from the role (body.students / body.workers set --accent, --edge, --line ...). */
+
+/* ---------- Page frame: back link and banner (also in contact.css, so each page stands alone) ---------- */
+.info {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.8rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vw, 3rem);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 44px;
+  margin-bottom: .6rem;
+  padding: 0 .9rem 0 .6rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background-color .2s;
+}
+.back svg { width: 20px; height: 20px; transition: transform .25s var(--ease); }
+.back:hover { background: var(--accent-soft); }
+.back:hover svg { transform: translateX(-3px); }
+
+/* ---------- Banner ---------- */
+.banner {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.3rem, 4vw, 2.2rem);
+  background: linear-gradient(120deg, var(--face) 0%, #d8eefb 60%, #e9f6ff 100%);
+  border: 3px solid var(--edge);
+  border-radius: 24px;
+  animation: rise .6s var(--ease) backwards;
+}
+.banner__z {
+  position: absolute;
+  right: -30px;
+  bottom: -52px;
+  width: 180px;
+  height: 180px;
+  fill: rgba(255, 255, 255, .6);
+  transform: rotate(-24deg) scaleX(-1);
+  pointer-events: none;
+}
+.banner > *:not(.banner__z) { position: relative; }
+.banner__title {
+  margin: 0 0 .3rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+}
+.banner__lead { max-width: 44ch; margin: 0; font-size: clamp(1rem, 2.4vw, 1.2rem); }
+
+
+
+.block { margin-top: clamp(1.8rem, 4vw, 2.8rem); }
+.block__title {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -.01em;
+}
+.block h3 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.2; }
+.block p { margin: 0; }
+
+/* ---------- How it works: three steps ---------- */
+.flow {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  counter-reset: none;
+}
+.flow__step {
+  position: relative;
+  display: grid;
+  gap: .35rem;
+  align-content: start;
+  padding: 1.2rem 1.2rem 1.3rem;
+  background: var(--white);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 14px 24px -22px var(--accent);
+  animation: rise .5s var(--ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * .09s);
+}
+.flow__num {
+  position: absolute;
+  top: .9rem;
+  right: 1.1rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--accent-soft);
+  -webkit-text-stroke: 2px var(--edge);
+}
+.flow__icon, .role__icon, .promises__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: .4rem;
+  color: var(--white);
+  background: var(--accent);
+  border-radius: 50%;
+}
+.flow__icon svg, .role__icon svg, .promises__icon svg { width: 24px; height: 24px; }
+
+/* ---------- Who uses it: one card per role, in that role's own shade ---------- */
+.roles {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.role {
+  --tint: var(--door-student);
+  --edge-c: var(--edge-student);
+  --solid: #1672b3;
+  padding: 1.2rem;
+  background: var(--tint);
+  border: 2px solid transparent;
+  border-radius: 18px;
+  animation: rise .5s var(--ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * .09s);
+  transition: transform .25s var(--ease), border-color .2s;
+}
+.role--staff { --tint: var(--door-staff); --edge-c: var(--edge-staff); --solid: #0a7389; }
+.role--admin { --tint: var(--door-admin); --edge-c: var(--edge-admin); --solid: #2459b3; }
+.role:hover { transform: translateY(-3px); border-color: var(--edge-c); }
+.role__icon { background: var(--solid); }
+.role ul { margin: .6rem 0 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
+.role li { position: relative; padding-left: 1.5rem; }
+.role li::before {                      /* tick drawn with borders */
+  content: "";
+  position: absolute;
+  left: .2rem;
+  top: .35em;
+  width: .45rem;
+  height: .8rem;
+  border: solid var(--solid);
+  border-width: 0 2.500px 2.500px 0;
+  transform: rotate(40deg);
+}
+
+/* ---------- What we aim for ---------- */
+.promises {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+}
+.promises li {
+  display: flex;
+  gap: .9rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  background: #f2faff;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  animation: rise .5s var(--ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * .07s);
+}
+.promises__icon { flex: none; width: 44px; height: 44px; margin: 0; }
+.promises h3 { font-size: 1.1rem; }
+.promises p { margin-top: .15rem; font-size: .95rem; color: var(--ink-soft); }
+
+/* ---------- Questions: plain <details>, works without any script ---------- */
+.faq { display: grid; gap: .7rem; max-width: 780px; }
+.faq details {
+  background: var(--white);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  transition: border-color .2s;
+}
+.faq details[open] { border-color: var(--edge); }
+.faq summary {
+  position: relative;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  padding: .6rem 3rem .6rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {                   /* plus that turns into a minus */
+  content: "+";
+  position: absolute;
+  right: 1.1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+.faq details[open] summary::after { content: "\2212"; }
+.faq summary:hover { background: var(--accent-soft); border-radius: 12px; }
+.faq details p { padding: 0 1.1rem 1.1rem; }
+.faq a { color: var(--accent); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { .role:hover { transform: none; } }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }

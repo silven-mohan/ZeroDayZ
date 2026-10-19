@@ -1,0 +1,7 @@
+/* ZeroDayZ – student suggestions: the anonymous check box */
+
+/* Check box */
+.check { display: flex; align-items: flex-start; gap: .7rem; }
+.check input { flex: none; width: 24px; height: 24px; margin: .1rem 0 0; accent-color: var(--accent); cursor: pointer; }
+.check label { margin: 0; font-weight: 500; cursor: pointer; }
+.check small { display: block; color: var(--ink-soft); font-size: .9rem; }

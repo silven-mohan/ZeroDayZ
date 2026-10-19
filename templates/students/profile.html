@@ -1,0 +1,58 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}My ID card | ZeroDayZ student{% endblock %}
+{% block description %}Your ZeroDayZ hostel ID card: name, roll number, course, hostel block and room.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile">
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+
+  <h1 class="sr-only">My ID card</h1>
+
+  <div class="hang">
+    <div class="swing">
+      <span class="strap" aria-hidden="true"><span class="strap__clip"></span></span>
+
+      <article class="id" aria-label="Student ID card for {{ student.name }}">
+        <div class="id__top">
+          <span class="id__slot" aria-hidden="true"></span>
+          <svg class="id__z" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></svg>
+          <p class="id__org">ZeroDayZ hostel</p>
+        </div>
+
+        <div class="id__body">
+          {% if student.photo %}
+            <img class="avatar avatar--photo" src="{{ student.photo }}" alt="Photo of {{ student.name }}">
+          {% else %}
+            <span class="avatar" aria-hidden="true">{{ student.initials }}</span>
+          {% endif %}
+
+          <h2 class="id__name">{{ student.name }}</h2>
+          <p class="id__badge">Student</p>
+
+          <dl class="facts">
+            <div><dt>Roll number</dt><dd class="facts__roll">{{ student.roll_number }}</dd></div>
+            <div><dt>Course</dt><dd>{{ student.course }}</dd></div>
+            <div><dt>Year</dt><dd>{{ student.year }}</dd></div>
+            <div><dt>Hostel</dt><dd>{{ student.block }}, Room {{ student.room }}</dd></div>
+            <div><dt>Mobile</dt><dd><a href="tel:{{ student.mobile | replace(' ', '') }}">{{ student.mobile }}</a></dd></div>
+          </dl>
+        </div>
+
+        <div class="id__foot" aria-hidden="true">
+          <span class="bars"></span>
+          <span class="id__code">{{ student.roll_number }}</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+{% endblock %}

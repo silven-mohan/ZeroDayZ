@@ -1,0 +1,195 @@
+/* ZeroDayZ – Contact (the same page for students and workers).
+   Self-contained: colours come from the role (body.students / body.workers set --accent, --edge, --line ...). */
+
+/* ---------- Page frame: back link and banner (also in contact.css, so each page stands alone) ---------- */
+.info {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.8rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vw, 3rem);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 44px;
+  margin-bottom: .6rem;
+  padding: 0 .9rem 0 .6rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background-color .2s;
+}
+.back svg { width: 20px; height: 20px; transition: transform .25s var(--ease); }
+.back:hover { background: var(--accent-soft); }
+.back:hover svg { transform: translateX(-3px); }
+
+/* ---------- Banner ---------- */
+.banner {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.3rem, 4vw, 2.2rem);
+  background: linear-gradient(120deg, var(--face) 0%, #d8eefb 60%, #e9f6ff 100%);
+  border: 3px solid var(--edge);
+  border-radius: 24px;
+  animation: rise .6s var(--ease) backwards;
+}
+.banner__z {
+  position: absolute;
+  right: -30px;
+  bottom: -52px;
+  width: 180px;
+  height: 180px;
+  fill: rgba(255, 255, 255, .6);
+  transform: rotate(-24deg) scaleX(-1);
+  pointer-events: none;
+}
+.banner > *:not(.banner__z) { position: relative; }
+.banner__title {
+  margin: 0 0 .3rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+}
+.banner__lead { max-width: 44ch; margin: 0; font-size: clamp(1rem, 2.4vw, 1.2rem); }
+
+
+
+/* ---------- Contact cards ---------- */
+.contacts {
+  display: grid;
+  gap: 1rem;
+  margin: 1.2rem 0 1rem;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+.contact {
+  display: grid;
+  align-content: start;
+  gap: .25rem;
+  height: 100%;
+  padding: 1.2rem;
+  background: var(--white);
+  border: 2px solid var(--line);
+  border-top: 8px solid var(--edge);          /* coloured tag edge, like the request tickets */
+  border-radius: 18px;
+  box-shadow: 0 14px 24px -22px var(--accent);
+  animation: rise .5s var(--ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * .07s);
+  transition: transform .25s var(--ease);
+}
+.contact:hover { transform: translateY(-3px); }
+.contact__icon, .hours__icon, .dev__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: .3rem;
+  color: var(--white);
+  background: var(--accent);
+  border-radius: 50%;
+}
+.contact__icon svg, .hours__icon svg, .dev__icon svg { width: 23px; height: 23px; }
+.contact__role { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; }
+.contact__note { margin: 0; font-size: .95rem; color: var(--ink-soft); }
+
+.contact__actions { display: grid; gap: .5rem; margin-top: .7rem; justify-items: start; }
+.contact__link {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 46px;
+  max-width: 100%;
+  padding: 0 1rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--accent-soft);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.contact__link svg { flex: none; width: 20px; height: 20px; }
+.contact__link span { overflow-wrap: anywhere; }
+.contact__link:hover, .contact__link:focus-visible { color: var(--white); background: var(--accent); }
+
+.contact--urgent { background: #fff8e6; border-color: #f0d28a; border-top-color: #f0b429; }
+.contact--urgent .contact__icon { background: #8a5a00; }
+.contact--urgent .contact__link { color: #7a4f00; background: #ffeab3; }
+.contact--urgent .contact__link:hover,
+.contact--urgent .contact__link:focus-visible { color: var(--white); background: #8a5a00; }
+
+/* ---------- Office hours ---------- */
+.hours {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: .2rem 1rem;
+  margin: 0 0 1rem;
+  padding: 1rem 1.2rem;
+  background: var(--accent-soft);
+  border-radius: 16px;
+}
+.hours__icon { margin: 0; grid-row: span 2; }
+.hours__title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+.hours__list { display: flex; flex-wrap: wrap; gap: .3rem 1.6rem; margin: 0; }
+.hours__list div { display: flex; flex-wrap: wrap; gap: .2rem .6rem; }
+.hours__list dt { font-weight: 700; }
+.hours__list dd { margin: 0; }
+
+/* ---------- Developer ---------- */
+.dev {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: .6rem 1.1rem;
+  margin: 0 0 1.4rem;
+  padding: 1.2rem;
+  background: #f2faff;
+  border: 2px dashed var(--edge);
+  border-radius: 18px;
+}
+.dev__icon { margin: 0; width: 52px; height: 52px; border-radius: 16px; }
+.dev__icon svg { width: 26px; height: 26px; }
+.dev__title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; }
+.dev__note { margin: .15rem 0 0; max-width: 60ch; color: var(--ink-soft); }
+.dev__actions { grid-column: 1 / -1; margin-top: .2rem; }
+@media (min-width: 860px) {
+  .dev { grid-template-columns: auto 1fr auto; }
+  .dev__actions { grid-column: auto; margin: 0; }
+}
+
+/* ---------- Call to action ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  min-height: 54px;
+  padding: 0 2rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--white);
+  text-decoration: none;
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 8px 18px -10px var(--accent);
+  transition: transform .2s var(--ease), box-shadow .2s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 12px 20px -10px var(--accent); }
+.btn:active { transform: translateY(0); }
+@media (max-width: 859px) { .btn { width: 100%; } }
+
+
+.nudge { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 1.2rem; border-top: 2px solid var(--line); }
+.nudge p { margin: 0; max-width: 46ch; }
+
+@media (prefers-reduced-motion: reduce) { .contact:hover { transform: none; } }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }

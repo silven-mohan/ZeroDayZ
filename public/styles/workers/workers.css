@@ -1,0 +1,120 @@
+/* ZeroDayZ – worker (staff) area: shared navigation + colour set.
+   Staff use the aqua colour set, the same as the staff login page. */
+
+body.workers {
+  --accent: #0a7389;        /* buttons, active item (5.5:1 with white) */
+  --accent-soft: #dcf5f8;   /* hover / active wash */
+  --face: var(--door-staff);
+  --edge: var(--edge-staff);
+  --line: #cdeef3;          /* quiet borders */
+  --nav-h: 64px;            /* height of the phone bottom bar */
+}
+
+/* ---------- Sign out (in the header) ---------- */
+.signout {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  transition: border-color .2s, background-color .2s;
+}
+.signout svg { width: 18px; height: 18px; }
+.signout:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* ---------- Navigation: tabs under the header ---------- */
+.worker-nav {
+  background: var(--white);
+  border-bottom: 2px solid var(--line);
+}
+.worker-nav__list {
+  display: flex;
+  gap: .25rem;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+  list-style: none;
+}
+.worker-nav a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 58px;
+  padding: 0 1.2rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px 12px 0 0;
+  transition: background-color .2s, color .2s;
+}
+.worker-nav a::after {            /* underline that grows in */
+  content: "";
+  position: absolute;
+  left: .7rem;
+  right: .7rem;
+  bottom: -2px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  transform: scaleX(0);
+  transition: transform .3s var(--ease);
+}
+.worker-nav a:hover { background: var(--accent-soft); }
+.worker-nav a:hover::after { transform: scaleX(.5); }
+.worker-nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.worker-nav a[aria-current="page"]::after { transform: scaleX(1); }
+.worker-nav a:focus-visible { outline-offset: -4px; }
+
+.worker-nav__icon { position: relative; display: grid; place-items: center; }
+.worker-nav__icon svg { width: 22px; height: 22px; }
+
+
+/* ---------- Phones: bottom bar, easy to reach with a thumb ---------- */
+@media (max-width: 719px) {
+  body.workers { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+
+  .worker-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 2px solid var(--line);
+    border-bottom: 0;
+    box-shadow: 0 -10px 24px -18px rgba(10, 115, 137, .6);
+  }
+  .worker-nav__list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 0;
+  }
+  .worker-nav a {
+    flex-direction: column;
+    justify-content: center;
+    gap: .15rem;
+    min-height: var(--nav-h);
+    padding: 0 .2rem;
+    font-size: .82rem;
+    border-radius: 0;
+  }
+  .worker-nav a::after {          /* indicator moves to the top edge */
+    top: -2px;
+    bottom: auto;
+    left: 22%;
+    right: 22%;
+    border-radius: 0 0 4px 4px;
+  }
+  .signout { padding: 0 .8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worker-nav a::after { transition: none; }
+}

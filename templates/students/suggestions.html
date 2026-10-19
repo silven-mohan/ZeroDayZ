@@ -1,0 +1,79 @@
+{% extends "students/base_students.html" %}
+
+{% block title %}Suggestions | ZeroDayZ student{% endblock %}
+{% block description %}Share an idea to make the hostel better: food, facilities, safety, cleanliness and more.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/form_base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/students/suggestions.css') }}">
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/form_page.js') }}" defer></script>{% endblock %}
+
+{% block content %}
+<div class="page">
+  <a class="back" href="{{ url_for('student_home') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to home
+  </a>
+
+  <section class="card" aria-labelledby="page-title">
+    <h1 class="card__title" id="page-title">Suggestions</h1>
+    <p class="card__lead">Have an idea to make the hostel better? Share it here. For a problem that needs fixing, <a href="{{ url_for('student_new_complaint') }}">register a complaint</a> instead.</p>
+
+    {% if sent %}
+    <div class="alert alert--ok" role="status">Thank you for your suggestion. It was not saved yet, because suggestions are not connected to the database.</div>
+    {% endif %}
+
+    {% if errors %}
+    <div class="alert alert--error" id="form-errors" role="alert" tabindex="-1">
+      <p class="alert__title">Please fix the following</p>
+      <ul>{% for field, message in errors.items() %}<li><a href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form class="form" method="post" action="{{ url_for('student_suggestions') }}" novalidate>
+      <div class="form__fields">
+        <div class="field">
+          <label for="topic">Topic</label>
+          <div class="select">
+            <select id="topic" name="topic" required {% if errors.topic %}aria-invalid="true" aria-describedby="topic-error"{% endif %}>
+              <option value="" {% if not values.topic %}selected{% endif %}>Choose a topic</option>
+              {# Edit this list to change the dropdown. Keep SUGGESTION_TOPICS in app.py the same. #}
+              {% for t in ['Hostel facilities', 'Safety', 'Cleanliness', 'Other'] %}
+              <option value="{{ t }}" {% if values.topic == t %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if errors.topic %}<p class="field__error" id="topic-error">{{ errors.topic }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="title">Short title</label>
+          <input id="title" name="title" type="text" maxlength="80" value="{{ values.title }}" placeholder="e.g. More water coolers" required
+                 {% if errors.title %}aria-invalid="true" aria-describedby="title-error"{% endif %}>
+          {% if errors.title %}<p class="field__error" id="title-error">{{ errors.title }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="suggestion">Your suggestion</label>
+          <textarea id="suggestion" name="suggestion" rows="6" maxlength="500" required
+                    placeholder="What would you change, and how would it help?"
+                    aria-describedby="suggestion-count{% if errors.suggestion %} suggestion-error{% endif %}"
+                    {% if errors.suggestion %}aria-invalid="true"{% endif %}>{{ values.suggestion }}</textarea>
+          <p class="field__count" id="suggestion-count"><span data-count>{{ values.suggestion|length }}</span> / 500</p>
+          {% if errors.suggestion %}<p class="field__error" id="suggestion-error">{{ errors.suggestion }}</p>{% endif %}
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="anonymous" name="anonymous" value="1" {% if values.anonymous %}checked{% endif %}>
+          <label for="anonymous">Send without my name <small>The staff will not see who wrote it.</small></label>
+        </div>
+      </div>
+
+      <div class="form__submit"><button class="btn" type="submit">Send suggestion</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

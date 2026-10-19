@@ -1,28 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <header align="center"><strong>ZeroDayZ</strong></header>
-    
-    <div class ="nav-bar">
-    <a href = "profile.html">Profile</a>
-    <a href = "requests.html">Requests</a>
-    </div>
-    <div class = "profile-card">
-        <h2>swejo...!</h2>
-        <div class = "description">
-            <p>Description</p>
-        </div>
-        <div class ="resolved-requests">
-            <p>Rejected Requests:12</p>
-            <p>Completed Requests:20</p>
-            <p>Ongoing Requests:2</p>
-        </div>
-    </div>
+{% extends "workers/base_workers.html" %}
+{% set active = 'profile' %}
 
-</body>
-</html>
+{% block title %}My profile | ZeroDayZ Staff{% endblock %}
+{% block description %}Your ZeroDayZ staff profile and a summary of the hostel complaints you have handled.{% endblock %}
+
+{% block head_extra %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/workers/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+  {# The reversed Z: ZeroDayZ's signature shape, drawn once and reused #}
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="zmark" viewBox="0 0 100 100"><path d="M0 0H100V24L40 76H100V100H0V76L60 24H0Z"/></symbol>
+  </svg>
+
+  <article class="profile">
+
+    <!-- 1. What needs attention -->
+    <header class="hero">
+      <h1 id="page-title" class="hero__title">Hi, {{ worker.name }}</h1>
+      <p class="hero__lead">
+        {% if stats.ongoing %}
+          You have <strong>{{ stats.ongoing }}</strong> ongoing {{ 'request' if stats.ongoing == 1 else 'requests' }}.
+        {% else %}
+          You have no ongoing requests right now.
+        {% endif %}
+      </p>
+      <a class="btn" href="{{ url_for('worker_requests') }}">Open requests</a>
+    </header>
+
+    <!-- 2. Staff pass (hangs and settles once on load) -->
+    <aside class="pass" aria-label="Your staff pass">
+      <div class="pass__swing">
+        <span class="pass__strap" aria-hidden="true"><span class="pass__clip"></span></span>
+
+        <div class="pass__card">
+          <div class="pass__top" aria-hidden="true">
+            <span class="pass__slot"></span>
+            <svg class="pass__z" focusable="false"><use href="#zmark"/></svg>
+          </div>
+
+          <div class="pass__body">
+            {% if worker.photo %}
+              <img class="avatar avatar--photo" src="{{ worker.photo }}" alt="Photo of {{ worker.name }}" width="104" height="104">
+            {% else %}
+              <div class="avatar" aria-hidden="true">{{ worker.initials }}</div>
+            {% endif %}
+            <p class="pass__name">{{ worker.name }}</p>
+            <p class="pass__role">{{ worker.role }}</p>
+            <p class="pass__id"><span>Staff ID</span> {{ worker.staff_id }}</p>
+          </div>
+
+          <div class="pass__foot">
+            <svg class="pass__logo" focusable="false" aria-hidden="true"><use href="#zmark"/></svg>
+            <span>ZeroDayZ staff pass</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 3. Request history -->
+    <section class="history" aria-labelledby="history-title">
+      <h2 id="history-title" class="section-title">Request history</h2>
+
+      {% if stats.total %}
+        <p class="history__total"><strong>{{ stats.total }}</strong> requests in total</p>
+
+        <ul class="tally">
+          {% for key, label in [('completed', 'Completed'), ('ongoing', 'Ongoing'), ('rejected', 'Rejected')] %}
+            {% set count = stats[key] %}
+            {% set pct = (count / stats.total * 100) %}
+            <li class="tally__row tally__row--{{ key }}" style="--pct: {{ pct | round(1) }}%; --i: {{ loop.index0 }}">
+              <span class="tally__icon" aria-hidden="true">
+                {% if key == 'completed' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>
+                {% elif key == 'ongoing' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/></svg>
+                {% else %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
+                {% endif %}
+              </span>
+              <span class="tally__label">{{ label }} <span class="tally__pct">{{ pct | round | int }}%</span></span>
+              <span class="tally__num">{{ count }}</span>
+              <span class="tally__track" aria-hidden="true"><span class="tally__fill"></span></span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No requests yet. New complaints assigned to you will show up here.</p>
+      {% endif %}
+    </section>
+
+    <!-- 4. About -->
+    <section class="about" aria-labelledby="about-title">
+      <h2 id="about-title" class="section-title">About me</h2>
+      {% if worker.description %}
+        <p class="about__text">{{ worker.description }}</p>
+      {% else %}
+        <p class="empty">You have not added a description yet. Tell the hostel what kind of complaints you handle.</p>
+      {% endif %}
+    </section>
+
+  </article>
+{% endblock %}

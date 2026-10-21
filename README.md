@@ -12,6 +12,10 @@ and `SECRET_KEY` before starting the Flask app. There are no database or session
 credential defaults in the source code. The login query uses parameters and does
 not store or log submitted passwords.
 
+Admin login uses two additional Vercel variables:
+`ADMIN_USERNAME` and `ADMIN_PASSWORD`. Admin credentials are not stored in MySQL
+and do not use Firebase email verification.
+
 Student and staff account creation uses Firebase Email/Password Authentication. In
 Firebase Console, enable Authentication > Sign-in method > Email/Password and add
 the local development domain and production domain under Authentication settings.
@@ -42,6 +46,12 @@ Run the destructive reset only when that is intentional:
 
 ```bash
 .venv/bin/python update_database.py --yes
+```
+
+After an existing `users` table has been created, add staff profile fields with:
+
+```bash
+.venv/bin/python update_database.py
 ```
 
 Run the database setup with the project's virtual environment:

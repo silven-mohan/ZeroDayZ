@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Admin Login | ZeroDayZ{% endblock %}
+{% block description %}Sign in to the ZeroDayZ administration area.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/login.js') }}" defer></script>{% endblock %}
+{% block content %}
+<section class="login login--admin" aria-labelledby="page-title">
+  <h1 id="page-title" class="login__title">Admin login</h1>
+  <p class="login__lead">Manage ZeroDayZ data and accounts.</p>
+  <div class="panel">
+    {% if errors %}<div class="alert alert--error" id="form-errors" role="alert"><ul>{% for message in errors.values() %}<li>{{ message }}</li>{% endfor %}</ul></div>{% endif %}
+    <form class="form" method="post">
+      <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><div class="field__wrap"><input id="password" name="password" type="password" autocomplete="current-password" required><button class="field__toggle" type="button" aria-controls="password" hidden>Show</button></div></div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p class="panel__switch"><a class="link" href="{{ url_for('index') }}">Back to account selection</a></p>
+  </div>
+</section>
+{% include "partials/scene.html" %}
+{% endblock %}

@@ -50,6 +50,7 @@
             <p class="pass__name">{{ worker.name }}</p>
             <p class="pass__role">{{ worker.role }}</p>
             <p class="pass__id"><span>Staff ID</span> {{ worker.staff_id }}</p>
+            {% if worker.work_category %}<p class="pass__id"><span>Category</span> {{ worker.work_category }}</p>{% endif %}
           </div>
 
           <div class="pass__foot">
@@ -95,6 +96,12 @@
     <!-- 4. About -->
     <section class="about" aria-labelledby="about-title">
       <h2 id="about-title" class="section-title">About me</h2>
+      {% if error %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" class="form">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" maxlength="1000">{{ worker.description or '' }}</textarea>
+        <button class="btn" type="submit">Save description</button>
+      </form>
       {% if worker.description %}
         <p class="about__text">{{ worker.description }}</p>
       {% else %}

@@ -113,6 +113,23 @@
 
         {% endif %}
 
+        {% if role == 'staff' %}
+        <div class="field">
+          <label for="work_category">Work category</label>
+          <select id="work_category" name="work_category" required>
+            <option value="">Choose a category</option>
+            {% for option in ['Plumbing', 'Electrical', 'Maintenance', 'Other'] %}
+            <option value="{{ option }}" {% if values.work_category == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.work_category %}<p class="field__error">{{ errors.work_category }}</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="description">About your work</label>
+          <textarea id="description" name="description" maxlength="1000">{{ values.description }}</textarea>
+        </div>
+        {% endif %}
+
         <p class="field__error" id="firebase-error" hidden></p>
         <input id="firebase_id_token" name="firebase_id_token" type="hidden">
 

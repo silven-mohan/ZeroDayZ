@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Admin | ZeroDayZ{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">{% endblock %}
+{% block content %}
+<section class="login" aria-labelledby="page-title">
+  <h1 id="page-title" class="login__title">Database tables</h1>
+  <p class="login__lead">Choose a table to view, create, edit, or delete entries.</p>
+  <div class="panel">
+    <nav class="form" aria-label="Database tables">
+      {% for table in tables %}<a class="btn" href="{{ url_for('admin_table', table_name=table) }}">{{ table.replace('_', ' ')|title }}</a>{% endfor %}
+    </nav>
+  </div>
+</section>
+{% endblock %}

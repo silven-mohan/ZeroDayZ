@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Forgot Password | ZeroDayZ{% endblock %}
+{% block description %}Reset your ZeroDayZ password by email.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">{% endblock %}
+{% block scripts %}
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
+<script id="firebase-config" type="application/json">{{ firebase_config | tojson }}</script>
+<script src="{{ url_for('static', filename='js/firebase_password_reset.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<section class="login" aria-labelledby="page-title">
+  <h1 id="page-title" class="login__title">Forgot password?</h1>
+  <p class="login__lead">Enter your email and Firebase will send a password reset link.</p>
+  <div class="panel">
+    <div class="alert alert--error" id="reset-error" role="alert" hidden></div>
+    <div class="alert alert--info" id="reset-message" role="status" hidden></div>
+    <form class="form" id="reset-form">
+      <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      <button class="btn" type="submit">Send reset link</button>
+    </form>
+    <p class="panel__switch"><a class="link" href="{{ url_for('student_login') }}">Back to login</a></p>
+  </div>
+</section>
+{% include "partials/scene.html" %}
+{% endblock %}

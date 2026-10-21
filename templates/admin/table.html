@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ table_name }} | Admin | ZeroDayZ{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">{% endblock %}
+{% block content %}
+<section class="login" aria-labelledby="page-title">
+  <h1 id="page-title" class="login__title">{{ table_name.replace('_', ' ')|title }}</h1>
+  <p class="login__lead"><a class="link" href="{{ url_for('admin_dashboard') }}">All tables</a></p>
+  <div class="panel" style="max-width: 100%; overflow-x: auto">
+    <form method="post" class="form">
+      <input type="hidden" name="action" value="create">
+      {% for column in columns if column.COLUMN_NAME != 'id' and 'auto_increment' not in column.EXTRA and column.COLUMN_NAME not in ['created_at', 'updated_at'] %}
+      <div class="field"><label for="create-{{ column.COLUMN_NAME }}">{{ column.COLUMN_NAME }}</label><input id="create-{{ column.COLUMN_NAME }}" name="{{ column.COLUMN_NAME }}" type="text"></div>
+      {% endfor %}
+      <button class="btn" type="submit">Create entry</button>
+    </form>
+    <table>
+      <thead><tr>{% for column in columns %}<th>{{ column.COLUMN_NAME }}</th>{% endfor %}<th>Actions</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+      <tr>
+        {% for column in columns %}<td>{{ row[column.COLUMN_NAME] }}</td>{% endfor %}
+        <td><a href="{{ url_for('admin_table', table_name=table_name, edit=row.id) }}">Edit</a> <form method="post"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ row.id }}"><button type="submit">Delete</button></form></td>
+      </tr>
+      {% else %}<tr><td colspan="{{ columns|length + 1 }}">No entries.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if edit_row %}
+    <h2>Edit entry #{{ edit_row.id }}</h2>
+    <form method="post" class="form">
+      <input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ edit_row.id }}">
+      {% for column in columns if column.COLUMN_NAME != 'id' and 'auto_increment' not in column.EXTRA and column.COLUMN_NAME not in ['created_at', 'updated_at'] %}
+      <div class="field"><label for="edit-{{ column.COLUMN_NAME }}">{{ column.COLUMN_NAME }}</label><input id="edit-{{ column.COLUMN_NAME }}" name="{{ column.COLUMN_NAME }}" type="text" value="{{ edit_row[column.COLUMN_NAME] or '' }}"></div>
+      {% endfor %}
+      <button class="btn" type="submit">Save changes</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

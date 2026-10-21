@@ -15,6 +15,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 # (python app.py) and Vercel use the same URLs, e.g. /styles/mainlogin.css
 app = Flask(__name__, static_folder="public", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 30
 
 
 def missing_runtime_configuration():
@@ -130,8 +131,9 @@ def create_user(role, identifier, password, details):
             """
             INSERT INTO users
                 (role, identifier, password_hash, name, course, branch,
-                 study_year, hostel_location, email, email_verified, firebase_uid)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)
+                 study_year, hostel_location, work_category, description,
+                 email, email_verified, firebase_uid)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)
             """,
             (
                 role,
@@ -142,6 +144,8 @@ def create_user(role, identifier, password, details):
                 details.get("branch"),
                 details.get("study_year"),
                 details.get("hostel_location"),
+                details.get("work_category"),
+                details.get("description"),
                 details["email"],
                 details["firebase_uid"],
             ),
@@ -219,6 +223,7 @@ def login_view(template, role, id_field, id_message, destination):
                 errors["form"] = "The ID or password is incorrect."
             else:
                 session.clear()
+                session.permanent = True
                 session["user_id"] = user["id"]
                 session["role"] = user["role"]
                 session["identifier"] = user["identifier"]
@@ -266,6 +271,11 @@ def create_account(role):
             "study_year": request.form.get("study_year", "").strip(),
             "hostel_location": request.form.get("hostel_location", "").strip(),
         })
+    else:
+        values.update({
+            "work_category": request.form.get("work_category", "").strip(),
+            "description": request.form.get("description", "").strip(),
+        })
     errors = {}
 
     if request.method == "POST":
@@ -289,6 +299,9 @@ def create_account(role):
                 errors["study_year"] = "Choose your current year."
             if not values["hostel_location"]:
                 errors["hostel_location"] = "Enter your hostel location."
+        else:
+            if values["work_category"] not in {"Plumbing", "Electrical", "Maintenance", "Other"}:
+                errors["work_category"] = "Choose the category you work on."
         firebase_user = None
         if not errors:
             firebase_user = verify_firebase_email_token(
@@ -303,6 +316,7 @@ def create_account(role):
                 errors["form"] = "That account could not be created. It may already exist."
             else:
                 session.clear()
+                session.permanent = True
                 session["user_id"] = user_id
                 session["role"] = role
                 session["identifier"] = identifier
@@ -320,14 +334,97 @@ def create_account(role):
 
 
 
-@app.route("/login/admin")
+@app.route("/login/admin", methods=["GET", "POST"])
 def admin_login():
-    return page("login/admin.html")
+    errors = {}
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if not os.environ.get("ADMIN_USERNAME") or not os.environ.get("ADMIN_PASSWORD"):
+            errors["form"] = "Admin login is not configured."
+        elif admin_credentials_valid(username, password):
+            session.clear()
+            session.permanent = True
+            session["role"] = "admin"
+            session["admin_username"] = username
+            return redirect(url_for("admin_dashboard"))
+        else:
+            errors["form"] = "The username or password is incorrect."
+    return render_template("login/admin.html", errors=errors)
 
 
-@app.route("/login/forgot")
+@app.route("/login/forgot", methods=["GET", "POST"])
 def forgot_password():
-    return page("login/forgot.html")
+    message = None
+    error = None
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        if "@" not in email:
+            error = "Enter a valid email address."
+        else:
+            message = "If the account exists, Firebase has sent a password reset email."
+    return render_template("login/forgot.html", message=message, error=error)
+
+
+@app.route("/admin")
+def admin_dashboard():
+    denied = require_admin()
+    if denied:
+        return denied
+    return render_template("admin/dashboard.html", tables=sorted(ADMIN_TABLES))
+
+
+@app.route("/admin/table/<table_name>", methods=["GET", "POST"])
+def admin_table(table_name):
+    denied = require_admin()
+    if denied:
+        return denied
+    if table_name not in ADMIN_TABLES:
+        abort(404)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        columns = table_columns(cursor, table_name)
+        column_names = {column["COLUMN_NAME"] for column in columns}
+        if request.method == "POST":
+            action = request.form.get("action")
+            if action == "delete":
+                row_id = request.form.get("id")
+                cursor.execute(f"DELETE FROM `{table_name}` WHERE id = %s", (row_id,))
+            elif action in {"create", "update"}:
+                values = {
+                    name: request.form.get(name, "")
+                    for name in column_names
+                    if name != "id" and name not in {"created_at", "updated_at"}
+                }
+                values = {name: (value if value != "" else None) for name, value in values.items()}
+                if action == "create":
+                    names = list(values)
+                    placeholders = ", ".join(["%s"] * len(names))
+                    cursor.execute(
+                        f"INSERT INTO `{table_name}` ({', '.join(f'`{name}`' for name in names)}) VALUES ({placeholders})",
+                        tuple(values[name] for name in names),
+                    )
+                else:
+                    row_id = request.form.get("id")
+                    assignments = ", ".join(f"`{name}` = %s" for name in values)
+                    cursor.execute(
+                        f"UPDATE `{table_name}` SET {assignments} WHERE id = %s",
+                        tuple(values[name] for name in values) + (row_id,),
+                    )
+            connection.commit()
+            return redirect(url_for("admin_table", table_name=table_name))
+        cursor.execute(f"SELECT * FROM `{table_name}` ORDER BY id DESC LIMIT 100")
+        rows = cursor.fetchall()
+        edit_row = None
+        edit_id = request.args.get("edit")
+        if edit_id:
+            cursor.execute(f"SELECT * FROM `{table_name}` WHERE id = %s", (edit_id,))
+            edit_row = cursor.fetchone()
+        return render_template("admin/table.html", table_name=table_name, columns=columns, rows=rows, edit_row=edit_row)
+    finally:
+        cursor.close()
+        connection.close()
 
 
 # ---------- Worker (staff) area: pages shown after a worker signs in ----------
@@ -343,7 +440,7 @@ def get_current_worker():
         cursor = connection.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT id, name, identifier
+            SELECT id, name, identifier, work_category, description
             FROM users
             WHERE id = %s AND role = 'staff' AND is_active = TRUE
             LIMIT 1
@@ -377,7 +474,8 @@ def get_current_worker():
         "initials": "".join(part[0] for part in user["name"].split()[:2]).upper(),
         "role": "Hostel staff",
         "staff_id": user["identifier"],
-        "description": None,
+        "description": user["description"],
+        "work_category": user["work_category"],
         "photo": None,
     }
     stats = {
@@ -389,11 +487,33 @@ def get_current_worker():
     return worker, stats
 
 
-@app.route("/workers/profile")
+@app.route("/workers/profile", methods=["GET", "POST"])
 def worker_profile():
     worker, stats = get_current_worker()
     if worker is None:
         return redirect(url_for("staff_login"))
+    if request.method == "POST":
+        description = request.form.get("description", "").strip()
+        if len(description) > 1000:
+            return render_template("workers/profile.html", worker=worker, stats=stats, error="Keep the description under 1000 characters."), 400
+        connection = None
+        cursor = None
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET description = %s WHERE id = %s AND role = 'staff'", (description, session["user_id"]))
+            connection.commit()
+            worker["description"] = description
+        except (mysql.connector.Error, RuntimeError, ValueError):
+            if connection is not None:
+                connection.rollback()
+            app.logger.exception("Could not update worker description")
+            return render_template("workers/profile.html", worker=worker, stats=stats, error="Could not save your description."), 503
+        finally:
+            if cursor is not None:
+                cursor.close()
+            if connection is not None and connection.is_connected():
+                connection.close()
     return render_template("workers/profile.html", worker=worker, stats=stats)
 
 
@@ -592,6 +712,42 @@ def check_photo(photo):
     if size > MAX_PHOTO_BYTES:
         return "That photo is larger than 5 MB. Choose a smaller one."
     return None
+
+
+ADMIN_TABLES = {
+    "users", "hostels", "blocks", "floors", "rooms", "complaints",
+    "complaint_assignments", "complaint_history", "complaint_comments",
+    "complaint_attachments", "feedback", "suggestions", "complaint_actions",
+}
+
+
+def admin_credentials_valid(username, password):
+    return (
+        username == os.environ.get("ADMIN_USERNAME")
+        and password == os.environ.get("ADMIN_PASSWORD")
+        and bool(username and password)
+    )
+
+
+def require_admin():
+    if session.get("role") != "admin":
+        return redirect(url_for("admin_login"))
+    return None
+
+
+def table_columns(cursor, table_name):
+    if table_name not in ADMIN_TABLES:
+        abort(404)
+    cursor.execute(
+        """
+        SELECT COLUMN_NAME, DATA_TYPE, EXTRA, COLUMN_KEY
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+        ORDER BY ORDINAL_POSITION
+        """,
+        (table_name,),
+    )
+    return cursor.fetchall()
 
 
 @app.route("/students/complaints/new", methods=["GET", "POST"])

@@ -12,9 +12,9 @@ and `SECRET_KEY` before starting the Flask app. There are no database or session
 credential defaults in the source code. The login query uses parameters and does
 not store or log submitted passwords.
 
-Student mobile verification uses Firebase Phone Authentication. In Firebase Console,
-enable Authentication > Sign-in method > Phone and add the local development domain
-and production domain under Authentication settings.
+Student and staff account creation uses Firebase Email/Password Authentication. In
+Firebase Console, enable Authentication > Sign-in method > Email/Password and add
+the local development domain and production domain under Authentication settings.
 
 Set these Firebase web configuration variables:
 `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`,
@@ -32,9 +32,17 @@ the same project as the Admin service account, and the project has the required 
 quota or billing enabled. The registration page now displays the Firebase error code
 that identifies which setting failed.
 
-Firebase sends and verifies the SMS in the browser. Flask verifies the resulting ID
-token with Firebase Admin before creating the MySQL account. Phone numbers are sent
-in international format, such as `+919876543210`.
+Firebase creates the email/password account and sends the verification email in the
+browser. Flask verifies the resulting ID token and its `email_verified` claim with
+Firebase Admin before creating the MySQL account.
+
+To delete and recreate the `users` table, first back up the database. This deletes
+all user accounts and leaves dependent complaint records without valid user IDs.
+Run the destructive reset only when that is intentional:
+
+```bash
+.venv/bin/python update_database.py --yes
+```
 
 Run the database setup with the project's virtual environment:
 

@@ -48,14 +48,18 @@ def initialize_firebase():
     firebase_admin.initialize_app(credential)
 
 
-def verify_firebase_phone_token(id_token, mobile_number):
-    """Verify Firebase's phone-auth token and match its phone number."""
+def verify_firebase_email_token(id_token, email):
+    """Verify Firebase's email token and require that the email is verified."""
     try:
         initialize_firebase()
         decoded = firebase_auth.verify_id_token(id_token)
-        return decoded.get("phone_number") == mobile_number
+        return {
+            "uid": decoded.get("uid"),
+            "email": decoded.get("email"),
+            "email_verified": decoded.get("email_verified", False),
+        } if decoded.get("email") == email and decoded.get("email_verified") else None
     except Exception:
-        app.logger.exception("Could not verify Firebase phone authentication")
+        app.logger.exception("Could not verify Firebase email authentication")
         return False
 
 
@@ -121,8 +125,8 @@ def create_user(role, identifier, password, details):
             """
             INSERT INTO users
                 (role, identifier, password_hash, name, course, branch,
-                 study_year, hostel_location, mobile_number, mobile_verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                 study_year, hostel_location, email, email_verified, firebase_uid)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)
             """,
             (
                 role,
@@ -133,7 +137,8 @@ def create_user(role, identifier, password, details):
                 details.get("branch"),
                 details.get("study_year"),
                 details.get("hostel_location"),
-                details.get("mobile_number"),
+                details["email"],
+                details["firebase_uid"],
             ),
         )
         connection.commit()
@@ -241,6 +246,7 @@ def create_account(role):
     values = {
         id_field: identifier,
         "name": request.form.get("name", "").strip(),
+        "email": request.form.get("email", "").strip().lower(),
     }
     if role == "student":
         values.update({
@@ -248,7 +254,6 @@ def create_account(role):
             "branch": request.form.get("branch", "").strip(),
             "study_year": request.form.get("study_year", "").strip(),
             "hostel_location": request.form.get("hostel_location", "").strip(),
-            "mobile_number": request.form.get("mobile_number", "").strip(),
         })
     errors = {}
 
@@ -258,6 +263,8 @@ def create_account(role):
             errors[id_field] = "Enter your identifier."
         if len(values["name"]) < 2:
             errors["name"] = "Enter your full name."
+        if "@" not in values["email"] or "." not in values["email"].split("@")[-1]:
+            errors["email"] = "Enter a valid email address."
         if not password:
             errors["password"] = "Create a password."
         elif len(password) < 8:
@@ -271,16 +278,15 @@ def create_account(role):
                 errors["study_year"] = "Choose your current year."
             if not values["hostel_location"]:
                 errors["hostel_location"] = "Enter your hostel location."
-            mobile_digits = "".join(character for character in values["mobile_number"] if character.isdigit())
-            if len(mobile_digits) != 10:
-                errors["mobile_number"] = "Enter a 10-digit mobile number."
-            else:
-                values["mobile_number"] = "+91" + mobile_digits
-                if not verify_firebase_phone_token(
-                    request.form.get("firebase_id_token", ""), values["mobile_number"]
-                ):
-                    errors["mobile_number"] = "Verify your mobile number with Firebase."
+        firebase_user = None
         if not errors:
+            firebase_user = verify_firebase_email_token(
+                request.form.get("firebase_id_token", ""), values["email"]
+            )
+            if firebase_user is None:
+                errors["email"] = "Verify your email address with Firebase before submitting."
+        if not errors:
+            values["firebase_uid"] = firebase_user["uid"]
             user_id = create_user(role, identifier, password, values)
             if user_id is None:
                 errors["form"] = "That account could not be created. It may already exist."
@@ -406,7 +412,7 @@ def get_current_student():
         cursor.execute(
             """
                  SELECT identifier, name, course, branch, study_year,
-                     hostel_location, mobile_number
+                     hostel_location
             FROM users
             WHERE id = %s AND role = 'student' AND is_active = TRUE
             LIMIT 1
@@ -436,7 +442,6 @@ def get_current_student():
         "year": f"Year {user['study_year']}" if user["study_year"] else "Not provided",
         "block": user["hostel_location"] or "Not provided",
         "room": "",
-        "mobile": user["mobile_number"] or "Not provided",
         "photo": None,  # URL of an uploaded photo; None shows the initials instead
     }
 

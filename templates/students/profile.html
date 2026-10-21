@@ -44,7 +44,6 @@
             <div><dt>Branch</dt><dd>{{ student.branch }}</dd></div>
             <div><dt>Year</dt><dd>{{ student.year }}</dd></div>
             <div><dt>Hostel</dt><dd>{{ student.block }}</dd></div>
-            <div><dt>Mobile</dt><dd>{% if student.mobile != 'Not provided' %}<a href="tel:{{ student.mobile | replace(' ', '') }}">{{ student.mobile }}</a>{% else %}Not provided{% endif %}</dd></div>
           </dl>
         </div>
 

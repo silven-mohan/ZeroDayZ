@@ -93,20 +93,38 @@
       {% endif %}
     </section>
 
-    <!-- 4. About -->
+    <!-- 4. About: the description reads as a note; editing opens on demand -->
     <section class="about" aria-labelledby="about-title">
       <h2 id="about-title" class="section-title">About me</h2>
       {% if error %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
-      <form method="post" class="form">
-        <label for="description">Description</label>
-        <textarea id="description" name="description" maxlength="1000">{{ worker.description or '' }}</textarea>
-        <button class="btn" type="submit">Save description</button>
-      </form>
+
       {% if worker.description %}
-        <p class="about__text">{{ worker.description }}</p>
+        <div class="note">
+          <svg class="note__z" focusable="false" aria-hidden="true"><use href="#zmark"/></svg>
+          <p class="note__text">{{ worker.description }}</p>
+        </div>
       {% else %}
-        <p class="empty">You have not added a description yet. Tell the hostel what kind of complaints you handle.</p>
+        <div class="note note--empty">
+          <p class="note__empty">You have not added a description yet. Tell the hostel what kind of complaints you handle.</p>
+        </div>
       {% endif %}
+
+      <details class="editor"{% if error %} open{% endif %}>
+        <summary class="editor__toggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.500 6.500l4 4"/></svg>
+          <span class="editor__when-closed">{{ 'Edit description' if worker.description else 'Add a description' }}</span>
+          <span class="editor__when-open">Close editor</span>
+        </summary>
+
+        <form method="post" class="form">
+          <label for="description">Description</label>
+          <p class="form__hint" id="description-hint">Say what you handle and when people can expect you. Up to 1000 characters.</p>
+          <textarea id="description" name="description" maxlength="1000" aria-describedby="description-hint">{{ worker.description or '' }}</textarea>
+          <div class="form__actions">
+            <button class="btn" type="submit">Save description</button>
+          </div>
+        </form>
+      </details>
     </section>
 
   </article>

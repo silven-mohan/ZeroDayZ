@@ -5,34 +5,73 @@
 {% block content %}
 <main class="admin-shell">
   <header class="admin-topbar">
-    <div><p class="admin-kicker"><a class="admin-link" href="{{ url_for('admin_dashboard') }}">All tables</a></p><h1 class="admin-title">{{ table_name.replace('_', ' ')|title }}</h1><p class="admin-lead">Create, inspect, edit, or remove records from this table.</p></div>
+    <div>
+      <p class="admin-kicker"><a class="admin-link" href="{{ url_for('admin_dashboard') }}">All tables</a></p>
+      <h1 class="admin-title">{{ table_name.replace('_', ' ')|title }}</h1>
+      <p class="admin-lead">Create, inspect, edit, or remove records from this table.</p>
+    </div>
   </header>
-  <div class="admin-workspace">
+
+  <div class="admin-workspace{% if edit_row %} is-editing{% endif %}">
     <section class="admin-panel">
-      <header class="admin-panel__header"><div><h2 class="admin-panel__title">Records</h2><p class="admin-panel__note">Showing up to 100 recent records.</p></div></header>
+      <header class="admin-panel__header">
+        <div>
+          <h2 class="admin-panel__title">Records</h2>
+          <p class="admin-panel__note">Showing up to 100 recent records.</p>
+        </div>
+        <span class="admin-badge">{{ rows|length }} shown</span>
+      </header>
       <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead><tr>{% for column in columns %}<th>{{ column.COLUMN_NAME }}</th>{% endfor %}<th>Actions</th></tr></thead>
-        <tbody>
-        {% for row in rows %}
-        <tr>
-          {% for column in columns %}<td>{{ row[column.COLUMN_NAME] }}</td>{% endfor %}
-          <td><div class="admin-actions"><a href="{{ url_for('admin_table', table_name=table_name, edit=row.id) }}">Edit</a><form method="post"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ row.id }}"><button class="admin-button--danger" type="submit">Delete</button></form></div></td>
-        </tr>
-        {% else %}<tr><td class="admin-empty" colspan="{{ columns|length + 1 }}">No records yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+        <table class="admin-table">
+          <thead>
+            <tr>{% for column in columns %}<th scope="col">{{ column.COLUMN_NAME }}</th>{% endfor %}<th scope="col">Actions</th></tr>
+          </thead>
+          <tbody>
+          {% for row in rows %}
+            <tr{% if edit_row and edit_row.id == row.id %} class="is-editing"{% endif %}>
+              {% for column in columns %}
+                {% set value = row[column.COLUMN_NAME] %}
+                <td>{% if value is none %}<span class="admin-null">null</span>{% else %}{{ value }}{% endif %}</td>
+              {% endfor %}
+              <td>
+                <div class="admin-actions">
+                  <a href="{{ url_for('admin_table', table_name=table_name, edit=row.id) }}">Edit</a>
+                  <form method="post" onsubmit="return confirm('Delete this record? This cannot be undone.');">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="{{ row.id }}">
+                    <button class="admin-button--danger" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td class="admin-empty" colspan="{{ columns|length + 1 }}">No records yet. Use the form to add the first one.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
       </div>
     </section>
-    <aside class="admin-panel">
-      <header class="admin-panel__header"><div><h2 class="admin-panel__title">{{ 'Edit record' if edit_row else 'New record' }}</h2><p class="admin-panel__note">Fields are written directly to MySQL.</p></div></header>
-      <form method="post" class="admin-form">
+
+    <aside class="admin-panel admin-panel--form">
+      <header class="admin-panel__header">
+        <div>
+          <h2 class="admin-panel__title">{{ 'Edit record' if edit_row else 'New record' }}</h2>
+          <p class="admin-panel__note">Fields are written directly to MySQL.</p>
+        </div>
+      </header>
+      <form method="post" class="admin-form" autocomplete="off">
         <input type="hidden" name="action" value="{{ 'update' if edit_row else 'create' }}">
         {% if edit_row %}<input type="hidden" name="id" value="{{ edit_row.id }}">{% endif %}
-      {% for column in columns if column.COLUMN_NAME != 'id' and 'auto_increment' not in column.EXTRA and column.COLUMN_NAME not in ['created_at', 'updated_at'] %}
-      <div><label for="form-{{ column.COLUMN_NAME }}">{{ column.COLUMN_NAME }}</label><input id="form-{{ column.COLUMN_NAME }}" name="{{ column.COLUMN_NAME }}" type="text" value="{{ edit_row[column.COLUMN_NAME] if edit_row and edit_row[column.COLUMN_NAME] is not none else '' }}"></div>
-      {% endfor %}
-      <button class="admin-button" type="submit">{{ 'Save changes' if edit_row else 'Create record' }}</button>
+        {% for column in columns if column.COLUMN_NAME != 'id' and 'auto_increment' not in column.EXTRA and column.COLUMN_NAME not in ['created_at', 'updated_at'] %}
+        <div>
+          <label for="form-{{ column.COLUMN_NAME }}">{{ column.COLUMN_NAME }}</label>
+          <input id="form-{{ column.COLUMN_NAME }}" name="{{ column.COLUMN_NAME }}" type="text" value="{{ edit_row[column.COLUMN_NAME] if edit_row and edit_row[column.COLUMN_NAME] is not none else '' }}">
+        </div>
+        {% endfor %}
+        <div class="admin-form__actions">
+          <button class="admin-button" type="submit">{{ 'Save changes' if edit_row else 'Create record' }}</button>
+          {% if edit_row %}<a class="admin-button admin-button--ghost" href="{{ url_for('admin_table', table_name=table_name) }}">Cancel</a>{% endif %}
+        </div>
       </form>
     </aside>
   </div>

@@ -277,7 +277,117 @@
 .tally__row--rejected  .tally__icon { color: #9b2c1f; background: #fdeeee; }
 .tally__row--rejected  .tally__fill { background: #e0705f; }
 
-.about__text { margin: 0; max-width: 56ch; font-size: 1.05rem; }
+/* ---------- About me: a note that reads well, with the editor tucked behind a toggle ---------- */
+.about .alert { margin: 0 0 1rem; }
+
+.note {
+  position: relative;
+  overflow: hidden;
+  padding: 1.4rem 1.5rem 1.5rem 1.8rem;
+  background: var(--white);
+  border: 3px solid var(--edge);
+  border-radius: 18px;
+  box-shadow: 0 18px 26px -22px rgba(10, 115, 137, .5);
+}
+.note::before {                       /* spine in the same colours as the pass header */
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8px;
+  background: linear-gradient(180deg, #bcedf2 0%, #c9e8fb 100%);
+}
+.note__z {                            /* the reversed Z again, faint and cropped by the corner */
+  position: absolute;
+  right: -18px;
+  bottom: -30px;
+  width: 140px;
+  height: 140px;
+  fill: rgba(42, 151, 174, .09);
+  transform: rotate(-24deg) scaleX(-1);
+  pointer-events: none;
+}
+.note__text {
+  position: relative;
+  margin: 0;
+  max-width: 60ch;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  white-space: pre-line;              /* keep the line breaks typed in the textarea */
+  overflow-wrap: anywhere;
+}
+.note--empty {
+  background: transparent;
+  border-style: dashed;
+  border-color: #9fdbe6;
+  box-shadow: none;
+}
+.note--empty::before { display: none; }
+.note__empty { margin: 0; color: var(--ink-soft); }
+
+.about .editor { margin-top: 1rem; }
+.about .editor__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 44px;
+  padding: .5rem 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--white);
+  border: 2px solid var(--edge);
+  border-radius: 999px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background .2s;
+}
+.about .editor__toggle::-webkit-details-marker { display: none; }
+.about .editor__toggle:hover { background: #f0fafc; }
+.about .editor__toggle:focus-visible { outline: 3px solid rgba(42, 151, 174, .4); outline-offset: 2px; }
+.about .editor__toggle svg { width: 18px; height: 18px; flex: none; }
+.about .editor__when-open { display: none; }
+.about .editor[open] .editor__when-open { display: inline; }
+.about .editor[open] .editor__when-closed { display: none; }
+
+.about .form {
+  display: grid;
+  gap: .5rem;
+  margin-top: 1rem;
+  padding: 1.2rem;
+  background: #f0fafc;
+  border: 2px dashed #9fdbe6;
+  border-radius: 18px;
+  animation: reveal .25s var(--ease);
+}
+.about .form label { font-weight: 700; }
+.about .form__hint { margin: 0; font-size: .92rem; color: var(--ink-soft); }
+.about .form textarea {
+  display: block;
+  width: 100%;
+  min-height: 9rem;
+  max-height: 24rem;
+  padding: .8rem 1rem;
+  font: inherit;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--white);
+  border: 2px solid var(--edge);
+  border-radius: 14px;
+  resize: vertical;
+  field-sizing: content;              /* grows with the text where supported */
+  transition: border-color .15s, box-shadow .15s;
+}
+.about .form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(42, 151, 174, .25);
+}
+.about .form__actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .4rem; }
+
+@media (max-width: 520px) {
+  .note { padding: 1.2rem 1.1rem 1.3rem 1.5rem; }
+  .about .form { padding: 1rem; }
+}
 
 /* ---------- Motion: the pass swings and settles once; bars fill once ---------- */
 @keyframes swing {
@@ -288,3 +398,8 @@
   100% { transform: rotate(0deg); }
 }
 @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .about .form { animation: none; }
+}

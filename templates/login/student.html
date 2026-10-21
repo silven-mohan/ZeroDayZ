@@ -27,7 +27,7 @@
         <p class="alert__title">Please fix the following</p>
         <ul>
           {% for field, message in errors.items() %}
-          <li><a href="#{{ field }}">{{ message }}</a></li>
+          <li><a href="#{{ field if field != 'form' else 'roll_number' }}">{{ message }}</a></li>
           {% endfor %}
         </ul>
       </div>

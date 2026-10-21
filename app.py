@@ -1,19 +1,167 @@
+import os
+import json
 from datetime import datetime
 
-from flask import Flask, abort, redirect, render_template, request, url_for
+import firebase_admin
+import mysql.connector
+from flask import Flask, abort, redirect, render_template, request, session, url_for
+from firebase_admin import auth as firebase_auth, credentials
 from jinja2 import TemplateNotFound
 from werkzeug.exceptions import NotFound
+from werkzeug.security import check_password_hash, generate_password_hash
 
 # HTML lives in templates/. CSS/JS/images live in public/ because Vercel only serves
 # static files from public/. Serving public/ at the site root makes local runs
 # (python app.py) and Vercel use the same URLs, e.g. /styles/mainlogin.css
 app = Flask(__name__, static_folder="public", static_url_path="")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+
+
+def get_db_connection():
+    """Create a MySQL connection using deployment environment variables."""
+    required = ("MYSQL_HOST", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_DATABASE")
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        raise RuntimeError(f"Missing database environment variables: {', '.join(missing)}")
+    return mysql.connector.connect(
+        host=os.environ["MYSQL_HOST"],
+        port=int(os.environ.get("MYSQL_PORT", "3306")),
+        user=os.environ["MYSQL_USER"],
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ["MYSQL_DATABASE"],
+    )
+
+
+def initialize_firebase():
+    """Initialize Firebase Admin once when a service-account file is configured."""
+    if firebase_admin._apps:
+        return
+    service_account_value = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if not service_account_value:
+        app.logger.error("FIREBASE_SERVICE_ACCOUNT_JSON is not configured")
+        return
+    try:
+        service_account = json.loads(service_account_value)
+        credential = credentials.Certificate(service_account)
+    except json.JSONDecodeError:
+        credential = credentials.Certificate(service_account_value)
+    firebase_admin.initialize_app(credential)
+
+
+def verify_firebase_phone_token(id_token, mobile_number):
+    """Verify Firebase's phone-auth token and match its phone number."""
+    try:
+        initialize_firebase()
+        decoded = firebase_auth.verify_id_token(id_token)
+        return decoded.get("phone_number") == mobile_number
+    except Exception:
+        app.logger.exception("Could not verify Firebase phone authentication")
+        return False
+
+
+def authenticate_user(role, identifier, password):
+    """Return the matching user, or None when the credentials are invalid."""
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, role, identifier, password_hash
+            FROM users
+            WHERE role = %s AND identifier = %s AND is_active = TRUE
+            LIMIT 1
+            """,
+            (role, identifier),
+        )
+        user = cursor.fetchone()
+        if user and check_password_hash(user["password_hash"], password):
+            return user
+    except (mysql.connector.Error, ValueError):
+        app.logger.exception("Could not authenticate user against MySQL")
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
+    return None
+
+
+def account_exists(role, identifier):
+    """Return whether an account exists without checking its password."""
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT 1 FROM users WHERE role = %s AND identifier = %s LIMIT 1",
+            (role, identifier),
+        )
+        return cursor.fetchone() is not None
+    except (mysql.connector.Error, ValueError):
+        app.logger.exception("Could not check whether the user exists")
+        return None
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
+
+
+def create_user(role, identifier, password, details):
+    """Create an account and return its new ID."""
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users
+                (role, identifier, password_hash, name, course, branch,
+                 study_year, hostel_location, mobile_number, mobile_verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+            """,
+            (
+                role,
+                identifier,
+                generate_password_hash(password),
+                details["name"],
+                details.get("course"),
+                details.get("branch"),
+                details.get("study_year"),
+                details.get("hostel_location"),
+                details.get("mobile_number"),
+            ),
+        )
+        connection.commit()
+        return cursor.lastrowid
+    except mysql.connector.Error:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Could not create user account")
+        return None
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
 
 
 @app.context_processor
 def inject_globals():
     return {
         "current_year": datetime.now().year,
+        "firebase_config": {
+            "apiKey": os.environ.get("FIREBASE_API_KEY", ""),
+            "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
+            "projectId": os.environ.get("FIREBASE_PROJECT_ID", ""),
+            "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET", ""),
+            "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
+            "appId": os.environ.get("FIREBASE_APP_ID", ""),
+        },
         # Number shown on the Requests tab of the worker menu.
         "pending_count": len(get_upcoming_requests()),
     }
@@ -32,14 +180,14 @@ def index():
     return page("mainlogin.html")
 
 
-def login_view(template, id_field, id_message):
+def login_view(template, role, id_field, id_message, destination):
     """Shared sign-in handling for student / staff / admin pages."""
     errors = {}
     identifier = ""
     notice = None
 
     if request.method == "POST":
-        identifier = request.form.get(id_field, "").strip()
+        identifier = request.form.get(id_field, "").strip().upper()
         password = request.form.get("password", "")
 
         if not identifier:
@@ -48,9 +196,17 @@ def login_view(template, id_field, id_message):
             errors["password"] = "Enter your password."
 
         if not errors:
-            # TODO: check the ID and password against the database, then start a
-            # session and redirect to the right dashboard.
-            notice = "Sign-in is not connected yet. Your details were not saved."
+            user = authenticate_user(role, identifier, password)
+            if user is None:
+                if account_exists(role, identifier) is False:
+                    return redirect(url_for("create_account", role=role, identifier=identifier))
+                errors["form"] = "The ID or password is incorrect."
+            else:
+                session.clear()
+                session["user_id"] = user["id"]
+                session["role"] = user["role"]
+                session["identifier"] = user["identifier"]
+                return redirect(url_for(destination))
 
     # The password is never sent back to the page.
     return render_template(template, errors=errors, notice=notice, **{id_field: identifier})
@@ -58,12 +214,93 @@ def login_view(template, id_field, id_message):
 
 @app.route("/login/student", methods=["GET", "POST"])
 def student_login():
-    return login_view("login/student.html", "roll_number", "Enter your roll number.")
+    return login_view(
+        "login/student.html", "student", "roll_number",
+        "Enter your roll number.", "student_home",
+    )
 
 
 @app.route("/login/staff", methods=["GET", "POST"])
 def staff_login():
-    return login_view("login/staff.html", "staff_id", "Enter your staff ID.")
+    return login_view(
+        "login/staff.html", "staff", "staff_id",
+        "Enter your staff ID.", "worker_requests",
+    )
+
+
+@app.route("/account/create/<role>", methods=["GET", "POST"])
+def create_account(role):
+    """Collect details and create a student or staff account."""
+    if role not in {"student", "staff"}:
+        abort(404)
+
+    id_field = "roll_number" if role == "student" else "staff_id"
+    identifier = request.args.get("identifier", "").strip().upper()
+    if request.method == "POST":
+        identifier = request.form.get(id_field, "").strip().upper()
+    values = {
+        id_field: identifier,
+        "name": request.form.get("name", "").strip(),
+    }
+    if role == "student":
+        values.update({
+            "course": request.form.get("course", "").strip(),
+            "branch": request.form.get("branch", "").strip(),
+            "study_year": request.form.get("study_year", "").strip(),
+            "hostel_location": request.form.get("hostel_location", "").strip(),
+            "mobile_number": request.form.get("mobile_number", "").strip(),
+        })
+    errors = {}
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if not identifier:
+            errors[id_field] = "Enter your identifier."
+        if len(values["name"]) < 2:
+            errors["name"] = "Enter your full name."
+        if not password:
+            errors["password"] = "Create a password."
+        elif len(password) < 8:
+            errors["password"] = "Use at least 8 characters."
+        if role == "student":
+            if not values["course"]:
+                errors["course"] = "Choose your course."
+            if not values["branch"]:
+                errors["branch"] = "Enter your branch."
+            if values["study_year"] not in {"1", "2", "3", "4", "5", "6"}:
+                errors["study_year"] = "Choose your current year."
+            if not values["hostel_location"]:
+                errors["hostel_location"] = "Enter your hostel location."
+            mobile_digits = "".join(character for character in values["mobile_number"] if character.isdigit())
+            if len(mobile_digits) != 10:
+                errors["mobile_number"] = "Enter a 10-digit mobile number."
+            else:
+                values["mobile_number"] = "+91" + mobile_digits
+                if not verify_firebase_phone_token(
+                    request.form.get("firebase_id_token", ""), values["mobile_number"]
+                ):
+                    errors["mobile_number"] = "Verify your mobile number with Firebase."
+        if not errors:
+            user_id = create_user(role, identifier, password, values)
+            if user_id is None:
+                errors["form"] = "That account could not be created. It may already exist."
+            else:
+                session.clear()
+                session["user_id"] = user_id
+                session["role"] = role
+                session["identifier"] = identifier
+                return redirect(url_for("student_home" if role == "student" else "worker_requests"))
+
+    return render_template(
+        "login/create_account.html",
+        role=role,
+        id_field=id_field,
+        values=values,
+        errors=errors,
+        otp_sent=False,
+    )
+
+
 
 
 @app.route("/login/admin")
@@ -157,30 +394,68 @@ def worker_request_action(request_id, action):
 
 # ---------- Student area: pages shown after a student signs in ----------
 def get_current_student():
-    """SAMPLE DATA. TODO: load the signed-in student from the database."""
-    name = "Ravi Kumar"
+    """Load the signed-in student's identity from the database."""
+    if session.get("role") != "student" or not session.get("user_id"):
+        return None
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+                 SELECT identifier, name, course, branch, study_year,
+                     hostel_location, mobile_number
+            FROM users
+            WHERE id = %s AND role = 'student' AND is_active = TRUE
+            LIMIT 1
+            """,
+            (session["user_id"],),
+        )
+        user = cursor.fetchone()
+    except (mysql.connector.Error, ValueError):
+        app.logger.exception("Could not load the signed-in student")
+        return None
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
+
+    if user is None:
+        return None
+
+    name = user["name"]
     return {
         "name": name,
         "initials": "".join(part[0] for part in name.split()[:2]).upper(),
-        "roll_number": "21B01A0001",
-        "course": "B.Tech, Computer Science",
-        "year": "2nd year",
-        "block": "Hostel Block-I",
-        "room": "26",
-        "mobile": "98765 43210",
+        "roll_number": user["identifier"],
+        "course": user["course"] or "Not provided",
+        "branch": user["branch"] or "Not provided",
+        "year": f"Year {user['study_year']}" if user["study_year"] else "Not provided",
+        "block": user["hostel_location"] or "Not provided",
+        "room": "",
+        "mobile": user["mobile_number"] or "Not provided",
         "photo": None,  # URL of an uploaded photo; None shows the initials instead
     }
 
 
 @app.route("/students/home")
 def student_home():
-    return render_template("students/home.html", student=get_current_student())
+    student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
+    return render_template("students/home.html", student=student)
 
 
 # These pages are not built yet: they show the friendly 404 until their template exists.
 @app.route("/students/profile")
 def student_profile():
-    return render_template("students/profile.html", student=get_current_student())
+    student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
+    return render_template("students/profile.html", student=student)
 
 
 # What each category covers (shown on the registered complaints page).
@@ -214,6 +489,8 @@ def check_photo(photo):
 @app.route("/students/complaints/new", methods=["GET", "POST"])
 def student_new_complaint():
     student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
     errors = {}
     values = {"mobile": "", "location": "", "category": "", "description": ""}
 
@@ -278,6 +555,9 @@ def get_student_complaints():
 
 @app.route("/students/complaints")
 def student_complaints():
+    student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
     everything = get_student_complaints()
     # `category` is only used when it is one of the known names.
     selected = request.args.get("category", "")
@@ -294,11 +574,15 @@ def student_complaints():
         complaints=shown,
         selected=selected,
         status_labels=STATUS_LABELS,
+        student=student,
     )
 
 
 @app.route("/students/feedback", methods=["GET", "POST"])
 def student_feedback():
+    student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
     # Feedback can only be given on complaints that were fixed.
     eligible = [c for c in get_student_complaints() if c["status"] == "completed"]
     errors = {}
@@ -323,6 +607,7 @@ def student_feedback():
         "students/feedback.html",
         eligible=eligible, errors=errors, values=values,
         sent=request.args.get("sent") == "1",
+        student=student,
     )
 
 
@@ -331,6 +616,9 @@ SUGGESTION_TOPICS = ["Hostel facilities", "Safety", "Cleanliness", "Rules and ti
 
 @app.route("/students/suggestions", methods=["GET", "POST"])
 def student_suggestions():
+    student = get_current_student()
+    if student is None:
+        return redirect(url_for("student_login"))
     errors = {}
     values = {"topic": "", "title": "", "suggestion": "", "anonymous": ""}
 
@@ -353,6 +641,7 @@ def student_suggestions():
         "students/suggestions.html",
         topics=SUGGESTION_TOPICS, errors=errors, values=values,
         sent=request.args.get("sent") == "1",
+        student=student,
     )
 
 
@@ -409,10 +698,14 @@ def get_developer_contact():
 
 
 def about_page(role):
+    if role == "student" and get_current_student() is None:
+        return redirect(url_for("student_login"))
     return render_template("about.html", active="about", **shared_layout(role))
 
 
 def contact_page(role):
+    if role == "student" and get_current_student() is None:
+        return redirect(url_for("student_login"))
     contacts, hours = get_hostel_contacts()
     return render_template(
         "contact.html",

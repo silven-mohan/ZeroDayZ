@@ -6,6 +6,14 @@
   var form = document.querySelector('.form');
   if (!form) return;
 
+  // Keep account identifiers consistent with the server-side normalization.
+  var identifier = form.querySelector('#roll_number, #staff_id');
+  if (identifier) {
+    identifier.addEventListener('input', function () {
+      identifier.value = identifier.value.toUpperCase();
+    });
+  }
+
   // Show / hide password
   var password = form.querySelector('#password');
   var toggle = form.querySelector('.field__toggle');

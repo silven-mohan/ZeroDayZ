@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account | ZeroDayZ{% endblock %}
+{% block description %}Create your ZeroDayZ account.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+  {% if role == 'student' %}
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
+  <script id="firebase-config" type="application/json">{{ firebase_config | tojson }}</script>
+  <script src="{{ url_for('static', filename='js/firebase_phone_auth.js') }}" defer></script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <section class="login {{ 'login--staff' if role == 'staff' else '' }}" aria-labelledby="page-title">
+    <h1 id="page-title" class="login__title">Create your account</h1>
+    <p class="login__lead">
+      We could not find that {{ 'staff ID' if role == 'staff' else 'roll number' }}.
+      Add your details to create a new account.
+    </p>
+
+    <div class="panel">
+      {% if errors %}
+      <div class="alert alert--error" id="form-errors" role="alert" tabindex="-1">
+        <p class="alert__title">Please fix the following</p>
+        <ul>
+          {% for field, message in errors.items() %}
+          <li><a href="#{{ field if field != 'form' else id_field }}">{{ message }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if otp_sent %}
+      <form class="form" method="post" action="{{ url_for('create_account', role=role) }}">
+        <div class="alert alert--info" role="status">
+          A verification code has been sent to your mobile number. It expires in 10 minutes.
+        </div>
+        <div class="field">
+          <label for="otp">Mobile verification code</label>
+          <input id="otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code"
+                 pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6-digit code" required
+                 {% if errors.otp %}aria-invalid="true"{% endif %}>
+          {% if errors.otp %}<p class="field__error">{{ errors.otp }}</p>{% endif %}
+        </div>
+        <button class="btn" type="submit">Verify number and create account</button>
+      </form>
+      {% else %}
+      <form class="form" method="post" action="{{ url_for('create_account', role=role) }}">
+        <div class="field">
+          <label for="{{ id_field }}">{{ 'Roll number' if role == 'student' else 'Staff ID' }}</label>
+          <input id="{{ id_field }}" name="{{ id_field }}" type="text" value="{{ values[id_field] }}"
+                 autocomplete="username" autocapitalize="characters" spellcheck="false" required
+                 aria-describedby="{{ id_field }}-hint"
+                 {% if errors[id_field] %}aria-invalid="true"{% endif %}>
+          <p class="field__hint" id="{{ id_field }}-hint">This identifier will be saved in uppercase.</p>
+          {% if errors[id_field] %}<p class="field__error">{{ errors[id_field] }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="name">Full name</label>
+          <input id="name" name="name" type="text" value="{{ values.name }}" autocomplete="name" required
+                 {% if errors.name %}aria-invalid="true"{% endif %}>
+          {% if errors.name %}<p class="field__error">{{ errors.name }}</p>{% endif %}
+        </div>
+
+        {% if role == 'student' %}
+        <div class="field">
+          <label for="course">Course</label>
+          <select id="course" name="course" required>
+            <option value="">Choose your course</option>
+            {% for option in ['B.Tech', 'M.Tech', 'B.Pharm', 'MBA', 'MCA', 'Other'] %}
+            <option value="{{ option }}" {% if values.course == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.course %}<p class="field__error">{{ errors.course }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="branch">Branch or degree type</label>
+          <input id="branch" name="branch" type="text" value="{{ values.branch }}"
+                 placeholder="For example, Computer Science or Pharmacy" required>
+          {% if errors.branch %}<p class="field__error">{{ errors.branch }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="study_year">Current year</label>
+          <select id="study_year" name="study_year" required>
+            <option value="">Choose your year</option>
+            {% for option in range(1, 7) %}
+            <option value="{{ option }}" {% if values.study_year == option|string %}selected{% endif %}>Year {{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.study_year %}<p class="field__error">{{ errors.study_year }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="hostel_location">Hostel location</label>
+          <input id="hostel_location" name="hostel_location" type="text" value="{{ values.hostel_location }}"
+                 placeholder="Hostel block and room number" required>
+          {% if errors.hostel_location %}<p class="field__error">{{ errors.hostel_location }}</p>{% endif %}
+        </div>
+
+        <div class="field" id="mobile-field">
+          <label for="mobile_number">Mobile number</label>
+          <input id="mobile_number" name="mobile_number" type="tel" value="{{ values.mobile_number }}"
+                 inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="10-digit mobile number" required>
+          <p class="field__hint">You will verify this number with a one-time code below.</p>
+          {% if errors.mobile_number %}<p class="field__error">{{ errors.mobile_number }}</p>{% endif %}
+        </div>
+        <div class="field" id="otp-field" hidden>
+          <label for="otp">Verification code</label>
+          <input id="otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code"
+                 pattern="[0-9]{6}" maxlength="6" placeholder="Enter the 6-digit code">
+          <p class="field__hint">Firebase sent a code to your mobile number.</p>
+          <p class="field__error" id="otp-error" hidden></p>
+        </div>
+        <div id="recaptcha-container"></div>
+        <input id="firebase_id_token" name="firebase_id_token" type="hidden">
+        {% endif %}
+
+        <div class="field">
+          <label for="password">Create password</label>
+          <div class="field__wrap">
+            <input id="password" name="password" type="password" autocomplete="new-password" required
+                   aria-describedby="password-hint"
+                   {% if errors.password %}aria-invalid="true"{% endif %}>
+            <button class="field__toggle" type="button" aria-controls="password" aria-pressed="false" hidden>Show</button>
+          </div>
+          <p class="field__hint" id="password-hint">Use at least 8 characters.</p>
+          {% if errors.password %}<p class="field__error">{{ errors.password }}</p>{% endif %}
+        </div>
+
+        <button class="btn" type="submit">Create account</button>
+      </form>
+      {% endif %}
+
+      <p class="panel__switch">
+        Already have an account?
+        <a class="link" href="{{ url_for('student_login' if role == 'student' else 'staff_login') }}">Back to login</a>
+      </p>
+    </div>
+  </section>
+
+  {% include "partials/scene.html" %}
+{% endblock %}

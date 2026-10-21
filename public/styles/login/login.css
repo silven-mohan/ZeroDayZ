@@ -93,6 +93,17 @@
   box-shadow: 0 0 0 4px rgba(98, 185, 242, .45);
 }
 .field input[aria-invalid="true"] { border-color: #c0392b; }
+.field select {
+  width: 100%;
+  min-height: 50px;
+  padding: .6rem .9rem;
+  font: inherit;
+  color: var(--ink);
+  background: #f4fbff;
+  border: 2px solid var(--field-edge);
+  border-radius: 10px;
+}
+.field select:focus { outline: none; border-color: var(--blue-600); box-shadow: 0 0 0 4px rgba(98, 185, 242, .45); }
 
 .field__wrap { position: relative; }
 .field__wrap input { padding-right: 5rem; }
@@ -115,6 +126,7 @@
 .field__toggle:hover { background: #e3f4ff; }
 
 .field__error { margin: .4rem 0 0; color: #9b2c1f; font-size: .95rem; font-weight: 500; }
+.field__hint { margin: .3rem 0 0; color: var(--ink-soft); font-size: .9rem; }
 
 .form__row { margin: -.4rem 0 0; text-align: right; }
 

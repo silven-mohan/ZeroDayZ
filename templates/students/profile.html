@@ -41,9 +41,10 @@
           <dl class="facts">
             <div><dt>Roll number</dt><dd class="facts__roll">{{ student.roll_number }}</dd></div>
             <div><dt>Course</dt><dd>{{ student.course }}</dd></div>
+            <div><dt>Branch</dt><dd>{{ student.branch }}</dd></div>
             <div><dt>Year</dt><dd>{{ student.year }}</dd></div>
-            <div><dt>Hostel</dt><dd>{{ student.block }}, Room {{ student.room }}</dd></div>
-            <div><dt>Mobile</dt><dd><a href="tel:{{ student.mobile | replace(' ', '') }}">{{ student.mobile }}</a></dd></div>
+            <div><dt>Hostel</dt><dd>{{ student.block }}</dd></div>
+            <div><dt>Mobile</dt><dd>{% if student.mobile != 'Not provided' %}<a href="tel:{{ student.mobile | replace(' ', '') }}">{{ student.mobile }}</a>{% else %}Not provided{% endif %}</dd></div>
           </dl>
         </div>
 

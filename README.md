@@ -26,6 +26,12 @@ In Firebase Authentication > Settings > Authorized domains, add the exact Vercel
 production hostname, such as `your-project.vercel.app`, and your custom `.app` or
 `.com` domain. Add `localhost` only for local development.
 
+For a Firebase `400` from `accounts:sendVerificationCode`, verify that Phone is
+enabled, the current hostname is an authorized domain, the Firebase web config uses
+the same project as the Admin service account, and the project has the required SMS
+quota or billing enabled. The registration page now displays the Firebase error code
+that identifies which setting failed.
+
 Firebase sends and verifies the SMS in the browser. Flask verifies the resulting ID
 token with Firebase Admin before creating the MySQL account. Phone numbers are sent
 in international format, such as `+919876543210`.

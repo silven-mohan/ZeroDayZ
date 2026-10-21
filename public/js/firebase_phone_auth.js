@@ -36,6 +36,20 @@
     }
   }
 
+  function firebaseErrorMessage(error) {
+    var code = error && error.code ? error.code : '';
+    var messages = {
+      'auth/operation-not-allowed': 'Enable Phone sign-in in Firebase Authentication.',
+      'auth/invalid-app-credential': 'Firebase rejected reCAPTCHA. Check the authorized domain and reCAPTCHA setup.',
+      'auth/invalid-phone-number': 'Enter a valid phone number in international format, such as +919876543210.',
+      'auth/missing-phone-number': 'Enter your mobile number before requesting a code.',
+      'auth/quota-exceeded': 'Firebase SMS quota has been exceeded for this project.',
+      'auth/billing-not-enabled': 'Enable billing for this Firebase project to use Phone Authentication.',
+      'auth/too-many-requests': 'Too many attempts. Wait and try again later.'
+    };
+    return messages[code] || (error && error.message) || 'Firebase could not send the verification code.';
+  }
+
   form.addEventListener('submit', function (event) {
     if (verified || confirmationResult) return;
     event.preventDefault();
@@ -75,7 +89,7 @@
           setButton('Verify number and create account', false);
         })
         .catch(function (error) {
-          showError(error.message || 'Firebase could not send the verification code.');
+          showError(firebaseErrorMessage(error));
           setButton('Create account', false);
           if (window.recaptchaVerifier) window.recaptchaVerifier.render();
         });

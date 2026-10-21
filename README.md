@@ -30,25 +30,12 @@ In Firebase Authentication > Settings > Authorized domains, add the exact Vercel
 production hostname, such as `your-project.vercel.app`, and your custom `.app` or
 `.com` domain. Add `localhost` only for local development.
 
-For a Firebase `400` from `accounts:sendVerificationCode`, verify that Phone is
-enabled, the current hostname is an authorized domain, the Firebase web config uses
-the same project as the Admin service account, and the project has the required SMS
-quota or billing enabled. The registration page now displays the Firebase error code
-that identifies which setting failed.
-
 Firebase creates the email/password account and sends the verification email in the
 browser. Flask verifies the resulting ID token and its `email_verified` claim with
 Firebase Admin before creating the MySQL account.
 
-To delete and recreate the `users` table, first back up the database. This deletes
-all user accounts and leaves dependent complaint records without valid user IDs.
-Run the destructive reset only when that is intentional:
-
-```bash
-.venv/bin/python update_database.py --yes
-```
-
-After an existing `users` table has been created, add staff profile fields with:
+After an existing `users` table has been created, add the staff profile fields with
+this non-destructive migration:
 
 ```bash
 .venv/bin/python update_database.py

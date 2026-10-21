@@ -127,6 +127,20 @@
 
 .field__error { margin: .4rem 0 0; color: #9b2c1f; font-size: .95rem; font-weight: 500; }
 .field__hint { margin: .3rem 0 0; color: var(--ink-soft); font-size: .9rem; }
+.verify-email {
+  justify-self: start;
+  margin-top: .35rem;
+  padding: .45rem .75rem;
+  font: inherit;
+  font-weight: 700;
+  color: var(--blue-600);
+  background: #e8f6ff;
+  border: 1px solid var(--blue-300);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.verify-email:hover { background: #d8efff; }
+.verify-email:disabled { cursor: wait; opacity: .65; }
 
 .form__row { margin: -.4rem 0 0; text-align: right; }
 

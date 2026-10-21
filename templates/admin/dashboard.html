@@ -1,15 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Admin | ZeroDayZ{% endblock %}
 {% block robots %}noindex, nofollow{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/login/login.css') }}">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='styles/admin/admin.css') }}">{% endblock %}
 {% block content %}
-<section class="login" aria-labelledby="page-title">
-  <h1 id="page-title" class="login__title">Database tables</h1>
-  <p class="login__lead">Choose a table to view, create, edit, or delete entries.</p>
-  <div class="panel">
-    <nav class="form" aria-label="Database tables">
-      {% for table in tables %}<a class="btn" href="{{ url_for('admin_table', table_name=table) }}">{{ table.replace('_', ' ')|title }}</a>{% endfor %}
-    </nav>
-  </div>
-</section>
+<main class="admin-shell">
+  <header class="admin-topbar">
+    <div><p class="admin-kicker">ZeroDayZ control room</p><h1 class="admin-title">Database workspace</h1><p class="admin-lead">Select a data set to inspect records, make focused changes, or add new entries.</p></div>
+    <a class="admin-link" href="{{ url_for('index') }}">Leave admin</a>
+  </header>
+  <section class="admin-grid" aria-label="Database tables">
+    {% for table in tables %}
+    <a class="admin-card" href="{{ url_for('admin_table', table_name=table) }}">
+      <span class="admin-card__index">{{ '%02d'|format(loop.index) }}</span>
+      <span><span class="admin-card__title">{{ table.replace('_', ' ')|title }}</span><span class="admin-card__meta">Open table workspace</span></span>
+      <span class="admin-card__arrow" aria-hidden="true">&#8594;</span>
+    </a>
+    {% endfor %}
+  </section>
+</main>
 {% endblock %}

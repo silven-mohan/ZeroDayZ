@@ -66,7 +66,7 @@ def verify_firebase_email_token(id_token, email):
         } if decoded.get("email") == email and decoded.get("email_verified") else None
     except Exception:
         app.logger.exception("Could not verify Firebase email authentication")
-        return False
+        return None
 
 
 def authenticate_user(role, identifier, password):

@@ -72,6 +72,7 @@
                  {% if errors.email %}aria-invalid="true"{% endif %}>
           <p class="field__hint">Firebase will send a verification link to this address.</p>
           {% if errors.email %}<p class="field__error">{{ errors.email }}</p>{% endif %}
+          <button class="verify-email" id="verify-email-button" type="button">Send verification email</button>
         </div>
 
         {% if role == 'student' %}

@@ -17,6 +17,11 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
 
+def missing_runtime_configuration():
+    required = ("SECRET_KEY", "MYSQL_HOST", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_DATABASE")
+    return [name for name in required if not os.environ.get(name)]
+
+
 def get_db_connection():
     """Create a MySQL connection using deployment environment variables."""
     required = ("MYSQL_HOST", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_DATABASE")
@@ -82,7 +87,7 @@ def authenticate_user(role, identifier, password):
         user = cursor.fetchone()
         if user and check_password_hash(user["password_hash"], password):
             return user
-    except (mysql.connector.Error, ValueError):
+    except (mysql.connector.Error, ValueError, RuntimeError):
         app.logger.exception("Could not authenticate user against MySQL")
     finally:
         if cursor is not None:
@@ -104,7 +109,7 @@ def account_exists(role, identifier):
             (role, identifier),
         )
         return cursor.fetchone() is not None
-    except (mysql.connector.Error, ValueError):
+    except (mysql.connector.Error, ValueError, RuntimeError):
         app.logger.exception("Could not check whether the user exists")
         return None
     finally:
@@ -201,6 +206,12 @@ def login_view(template, role, id_field, id_message, destination):
             errors["password"] = "Enter your password."
 
         if not errors:
+            missing = missing_runtime_configuration()
+            if missing:
+                errors["form"] = "Login is unavailable: configure the deployment environment variables."
+                app.logger.error("Missing runtime environment variables: %s", ", ".join(missing))
+                return render_template(template, errors=errors, notice=notice, **{id_field: identifier}), 503
+
             user = authenticate_user(role, identifier, password)
             if user is None:
                 if account_exists(role, identifier) is False:
@@ -321,18 +332,59 @@ def forgot_password():
 
 # ---------- Worker (staff) area: pages shown after a worker signs in ----------
 def get_current_worker():
-    """SAMPLE DATA. TODO: load the signed-in worker and their request counts from
-    the database once sign-in and sessions exist."""
-    name = "Swejo"
+    """Load the signed-in worker and their complaint counts from MySQL."""
+    if session.get("role") != "staff" or not session.get("user_id"):
+        return None, None
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, name, identifier
+            FROM users
+            WHERE id = %s AND role = 'staff' AND is_active = TRUE
+            LIMIT 1
+            """,
+            (session["user_id"],),
+        )
+        user = cursor.fetchone()
+        if user is None:
+            return None, None
+        cursor.execute(
+            """
+            SELECT status, COUNT(*) AS total
+            FROM complaints
+            WHERE assigned_staff_id = %s
+            GROUP BY status
+            """,
+            (user["id"],),
+        )
+        counts = {row["status"]: row["total"] for row in cursor.fetchall()}
+    except (mysql.connector.Error, RuntimeError, ValueError):
+        app.logger.exception("Could not load the signed-in worker")
+        return None, None
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
+
     worker = {
-        "name": name,
-        "initials": "".join(part[0] for part in name.split()[:2]).upper(),
+        "name": user["name"],
+        "initials": "".join(part[0] for part in user["name"].split()[:2]).upper(),
         "role": "Hostel staff",
-        "staff_id": "ST-0001",
-        "description": "Looks after electrical and plumbing complaints in the hostel.",
-        "photo": None,  # URL of an uploaded photo; None shows the initials instead
+        "staff_id": user["identifier"],
+        "description": None,
+        "photo": None,
     }
-    stats = {"completed": 72, "ongoing": 2, "rejected": 12}
+    stats = {
+        "completed": counts.get("completed", 0),
+        "ongoing": counts.get("ongoing", 0),
+        "rejected": counts.get("rejected", 0),
+    }
     stats["total"] = sum(stats.values())
     return worker, stats
 
@@ -340,35 +392,83 @@ def get_current_worker():
 @app.route("/workers/profile")
 def worker_profile():
     worker, stats = get_current_worker()
+    if worker is None:
+        return redirect(url_for("staff_login"))
     return render_template("workers/profile.html", worker=worker, stats=stats)
 
 
 def get_upcoming_requests():
-    """SAMPLE DATA. TODO: load the new requests assigned to the signed-in worker."""
-    return [
-        {
-            "id": 1,
-            "location": "Hostel Block-I, Ground Floor, Room No. 26",
-            "description": (
-                "From the last three days we are having voltage fluctuations, please "
-                "take our request into consideration and resolve it as soon as possible."
-            ),
-        }
-    ]
+    """Return pending complaints assigned to the signed-in worker."""
+    if session.get("role") != "staff" or not session.get("user_id"):
+        return []
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, category, location_details, description
+            FROM complaints
+            WHERE assigned_staff_id = %s AND status = 'pending'
+            ORDER BY created_at ASC
+            """,
+            (session["user_id"],),
+        )
+        return [
+            {
+                "id": row["id"],
+                "location": row["location_details"] or row["category"],
+                "description": row["description"],
+            }
+            for row in cursor.fetchall()
+        ]
+    except (mysql.connector.Error, RuntimeError, ValueError):
+        app.logger.exception("Could not load incoming worker requests")
+        return []
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
 
 
 def get_past_requests():
-    """SAMPLE DATA. TODO: load the worker's earlier requests.
-    status is one of: completed, ongoing, rejected, cancelled"""
-    return [
-        {"title": "Light issues", "status": "completed"},
-        {"title": "Plug point issue", "status": "completed"},
-        {"title": "Fan issue", "status": "completed"},
-        {"title": "Low voltage issue", "status": "ongoing"},
-        {"title": "Light replacement", "status": "ongoing"},
-        {"title": "Fan issues", "status": "rejected"},
-        {"title": "Light issues", "status": "cancelled"},
-    ]
+    """Return previously assigned complaints for the signed-in worker."""
+    if session.get("role") != "staff" or not session.get("user_id"):
+        return []
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, category, location_details, description, status
+            FROM complaints
+            WHERE assigned_staff_id = %s
+              AND status IN ('ongoing', 'completed', 'rejected', 'cancelled')
+            ORDER BY updated_at DESC
+            """,
+            (session["user_id"],),
+        )
+        return [
+            {
+                "id": row["id"],
+                "title": row["location_details"] or row["category"],
+                "description": row["description"],
+                "status": row["status"],
+            }
+            for row in cursor.fetchall()
+        ]
+    except (mysql.connector.Error, RuntimeError, ValueError):
+        app.logger.exception("Could not load worker request history")
+        return []
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
 
 
 ACTION_NOTICES = {
@@ -379,6 +479,9 @@ ACTION_NOTICES = {
 
 @app.route("/workers/requests")
 def worker_requests():
+    worker, _ = get_current_worker()
+    if worker is None:
+        return redirect(url_for("staff_login"))
     # `done` is only ever one of the two known actions, never printed as typed.
     notice = ACTION_NOTICES.get(request.args.get("done", ""))
     return render_template(
@@ -420,7 +523,7 @@ def get_current_student():
             (session["user_id"],),
         )
         user = cursor.fetchone()
-    except (mysql.connector.Error, ValueError):
+    except (mysql.connector.Error, RuntimeError, ValueError):
         app.logger.exception("Could not load the signed-in student")
         return None
     finally:
@@ -544,18 +647,42 @@ STATUS_LABELS = {
 
 
 def get_student_complaints():
-    """SAMPLE DATA. TODO: load this student's complaints from the database.
-    status is one of: pending, ongoing, completed, rejected"""
-    return [
-        {"ref": "#1004", "category": "Electrical", "location": "Room No. 228",
-         "description": "Lights not working.", "date": "15 Oct 2026", "status": "pending"},
-        {"ref": "#1003", "category": "Other", "location": "Room No. 26",
-         "description": "Broken door.", "date": "12 Oct 2026", "status": "ongoing"},
-        {"ref": "#1002", "category": "Plumbing", "location": "Washroom",
-         "description": "No water from the tap.", "date": "9 Oct 2026", "status": "completed"},
-        {"ref": "#1001", "category": "Plumbing", "location": "Washroom",
-         "description": "Water leakage from the tap.", "date": "2 Oct 2026", "status": "completed"},
-    ]
+    """Load only complaints filed by the authenticated student."""
+    if session.get("role") != "student" or not session.get("user_id"):
+        return []
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, category, location_details, description, status, created_at
+            FROM complaints
+            WHERE student_id = %s
+            ORDER BY created_at DESC
+            """,
+            (session["user_id"],),
+        )
+        return [
+            {
+                "ref": f"#{row['id']}",
+                "category": row["category"],
+                "location": row["location_details"] or "Location not provided",
+                "description": row["description"],
+                "date": row["created_at"].strftime("%d %b %Y"),
+                "status": row["status"],
+            }
+            for row in cursor.fetchall()
+        ]
+    except (mysql.connector.Error, RuntimeError, ValueError):
+        app.logger.exception("Could not load student complaints")
+        return []
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
 
 
 @app.route("/students/complaints")

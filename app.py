@@ -17,6 +17,17 @@ from werkzeug.security import check_password_hash, generate_password_hash
 app = Flask(__name__, static_folder="public", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 30
+app.config["SESSION_PERMANENT"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("VERCEL"))
+
+
+@app.before_request
+def keep_authenticated_sessions_permanent():
+    if session.get("user_id") or session.get("role") == "admin":
+        session.permanent = True
+        session.modified = True
 
 
 def missing_runtime_configuration():
@@ -725,27 +736,54 @@ def create_complaint(connection, student_id, values, idempotency_key):
     cursor = connection.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT id, status FROM complaints WHERE idempotency_key = %s FOR UPDATE",
-            (idempotency_key,),
+            """
+            SELECT COUNT(*) AS total
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'complaints'
+              AND COLUMN_NAME = 'idempotency_key'
+            """
         )
-        existing = cursor.fetchone()
-        if existing:
-            return existing["id"], existing["status"] == "pending"
+        has_idempotency = cursor.fetchone()["total"] == 1
+        if has_idempotency:
+            cursor.execute(
+                "SELECT id, status, assigned_staff_id FROM complaints WHERE idempotency_key = %s FOR UPDATE",
+                (idempotency_key,),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                return existing["id"], existing["assigned_staff_id"] is not None
 
         worker = select_assignment(cursor, values["category"])
-        cursor.execute(
-            """
-            INSERT INTO complaints
-                (student_id, category, description, location_details,
-                 mobile, status, assigned_staff_id, idempotency_key)
-            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s)
-            """,
-            (
-                student_id, values["category"], values["description"],
-                values["location"], values["mobile"],
-                worker["id"] if worker else None, idempotency_key,
-            ),
-        )
+        if has_idempotency:
+            cursor.execute(
+                """
+                INSERT INTO complaints
+                    (student_id, category, description, location_details,
+                     mobile, status, assigned_staff_id, idempotency_key)
+                VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s)
+                """,
+                (
+                    student_id, values["category"], values["description"],
+                    values["location"], values["mobile"],
+                    worker["id"] if worker else None, idempotency_key,
+                ),
+            )
+        else:
+            app.logger.warning("complaints.idempotency_key is missing; apply migration 001")
+            cursor.execute(
+                """
+                INSERT INTO complaints
+                    (student_id, category, description, location_details,
+                     mobile, status, assigned_staff_id)
+                VALUES (%s, %s, %s, %s, %s, 'pending', %s)
+                """,
+                (
+                    student_id, values["category"], values["description"],
+                    values["location"], values["mobile"],
+                    worker["id"] if worker else None,
+                ),
+            )
         complaint_id = cursor.lastrowid
         add_history(cursor, complaint_id, student_id, None, "pending", "Complaint created")
         if worker:
@@ -760,6 +798,12 @@ def create_complaint(connection, student_id, values, idempotency_key):
         return complaint_id, bool(worker)
     finally:
         cursor.close()
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
 
 
 @app.route("/workers/requests")

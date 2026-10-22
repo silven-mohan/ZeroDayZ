@@ -27,6 +27,9 @@
     {% if notice %}
       <div class="alert" role="status">{{ notice }}</div>
     {% endif %}
+    {% for category, message in flashes %}
+      <div class="alert" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</div>
+    {% endfor %}
 
     <!-- New requests waiting for a decision -->
     <section class="block" aria-labelledby="upcoming-title">
@@ -89,6 +92,11 @@
                 </svg>
                 {{ statuses[r.status] }}
               </span>
+              {% if r.status == 'ongoing' %}
+              <form method="post" action="{{ url_for('worker_request_action', request_id=r.id, action='complete') }}">
+                <button class="act act--accept" type="submit">Mark completed</button>
+              </form>
+              {% endif %}
             </li>
           {% endfor %}
         </ul>

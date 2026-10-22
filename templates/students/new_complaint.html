@@ -24,7 +24,11 @@
 
     {% if sent %}
     <div class="alert alert--ok" role="status">
-      Your complaint was received. It was not saved yet, because complaints are not connected to the database.
+      {% if assigned %}
+      Your complaint was received and assigned to an eligible staff member.
+      {% else %}
+      Your complaint was received and is waiting for an eligible staff member.
+      {% endif %}
     </div>
     {% endif %}
 

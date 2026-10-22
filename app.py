@@ -1,10 +1,11 @@
 import os
 import json
+import secrets
 from datetime import datetime
 
 import firebase_admin
 import mysql.connector
-from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, get_flashed_messages, redirect, render_template, request, session, url_for
 from firebase_admin import auth as firebase_auth, credentials
 from jinja2 import TemplateNotFound
 from werkzeug.exceptions import NotFound
@@ -671,9 +672,94 @@ def get_past_requests():
 
 
 ACTION_NOTICES = {
-    "accept": "You chose to accept this request. It was not saved yet, because requests are not connected to the database.",
-    "decline": "You chose to decline this request. It was not saved yet, because requests are not connected to the database.",
+    "accept": "The request was accepted and is now in progress.",
+    "decline": "The request was declined and reassigned when an eligible worker was available.",
+    "complete": "The request was marked as completed.",
 }
+
+
+def add_history(cursor, complaint_id, actor_id, old_status, new_status, note):
+    cursor.execute(
+        """
+        INSERT INTO complaint_history
+            (complaint_id, changed_by, old_status, new_status, note)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (complaint_id, actor_id, old_status, new_status, note),
+    )
+
+
+def select_assignment(cursor, category, complaint_id=None):
+    """Lock matching staff rows while calculating workload for this assignment."""
+    declined_filter = ""
+    params = [category]
+    if complaint_id is not None:
+        declined_filter = """
+          AND NOT EXISTS (
+              SELECT 1 FROM complaint_actions ca
+              WHERE ca.complaint_id = %s
+                AND ca.staff_id = u.id
+                AND ca.action = 'declined'
+          )
+        """
+        params.append(complaint_id)
+    cursor.execute(
+        f"""
+        SELECT u.id,
+               COUNT(CASE WHEN c.status IN ('pending', 'ongoing') THEN 1 END) AS workload
+        FROM users u
+        LEFT JOIN complaints c ON c.assigned_staff_id = u.id
+        WHERE u.role = 'staff' AND u.is_active = TRUE
+          AND u.work_category = %s
+          {declined_filter}
+        GROUP BY u.id
+        ORDER BY workload ASC, u.id ASC
+        FOR UPDATE
+        """,
+        tuple(params),
+    )
+    return cursor.fetchone()
+
+
+def create_complaint(connection, student_id, values, idempotency_key):
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT id, status FROM complaints WHERE idempotency_key = %s FOR UPDATE",
+            (idempotency_key,),
+        )
+        existing = cursor.fetchone()
+        if existing:
+            return existing["id"], existing["status"] == "pending"
+
+        worker = select_assignment(cursor, values["category"])
+        cursor.execute(
+            """
+            INSERT INTO complaints
+                (student_id, category, description, location_details,
+                 mobile, status, assigned_staff_id, idempotency_key)
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s)
+            """,
+            (
+                student_id, values["category"], values["description"],
+                values["location"], values["mobile"],
+                worker["id"] if worker else None, idempotency_key,
+            ),
+        )
+        complaint_id = cursor.lastrowid
+        add_history(cursor, complaint_id, student_id, None, "pending", "Complaint created")
+        if worker:
+            cursor.execute(
+                """
+                INSERT INTO complaint_assignments
+                    (complaint_id, staff_id, assigned_by, notes)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (complaint_id, worker["id"], student_id, "Automatically assigned by workload"),
+            )
+        return complaint_id, bool(worker)
+    finally:
+        cursor.close()
 
 
 @app.route("/workers/requests")
@@ -683,11 +769,13 @@ def worker_requests():
         return redirect(url_for("staff_login"))
     # `done` is only ever one of the two known actions, never printed as typed.
     notice = ACTION_NOTICES.get(request.args.get("done", ""))
+    flashes = list(get_flashed_messages(with_categories=True))
     return render_template(
         "workers/requests.html",
         upcoming=get_upcoming_requests(),
         past=get_past_requests(),
         notice=notice,
+        flashes=flashes,
     )
 
 
@@ -695,8 +783,81 @@ def worker_requests():
 def worker_request_action(request_id, action):
     if action not in ACTION_NOTICES:
         abort(404)
-    # TODO: save the worker's choice for this request in the database.
-    # Redirect so that refreshing the page does not send the choice again.
+    if session.get("role") != "staff" or not session.get("user_id"):
+        return redirect(url_for("staff_login"))
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT c.id, c.status, c.category, c.assigned_staff_id
+            FROM complaints c
+            JOIN users u ON u.id = %s AND u.role = 'staff' AND u.is_active = TRUE
+            WHERE c.id = %s AND c.assigned_staff_id = u.id
+            FOR UPDATE
+            """,
+            (session["user_id"], request_id),
+        )
+        complaint = cursor.fetchone()
+        if complaint is None:
+            flash("That request is no longer assigned to you.", "error")
+            return redirect(url_for("worker_requests"), code=303)
+
+        if action == "accept":
+            if complaint["status"] != "pending":
+                flash("That request cannot be accepted in its current state.", "error")
+            else:
+                cursor.execute(
+                    "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'accepted')",
+                    (request_id, session["user_id"]),
+                )
+                cursor.execute(
+                    "UPDATE complaints SET status = 'ongoing', updated_at = CURRENT_TIMESTAMP WHERE id = %s AND status = 'pending'",
+                    (request_id,),
+                )
+                add_history(cursor, request_id, session["user_id"], "pending", "ongoing", "Assignment accepted")
+        elif action == "complete":
+            if complaint["status"] != "ongoing":
+                flash("That request cannot be completed in its current state.", "error")
+            else:
+                cursor.execute(
+                    "UPDATE complaints SET status = 'completed', resolved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = %s AND status = 'ongoing'",
+                    (request_id,),
+                )
+                add_history(cursor, request_id, session["user_id"], "ongoing", "completed", "Work completed")
+        else:
+            cursor.execute(
+                "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'declined')",
+                (request_id, session["user_id"]),
+            )
+            cursor.execute(
+                "UPDATE complaint_assignments SET ended_at = CURRENT_TIMESTAMP WHERE complaint_id = %s AND staff_id = %s AND ended_at IS NULL",
+                (request_id, session["user_id"]),
+            )
+            worker = select_assignment(cursor, complaint["category"], request_id)
+            cursor.execute(
+                "UPDATE complaints SET assigned_staff_id = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (worker["id"] if worker else None, request_id),
+            )
+            if worker:
+                cursor.execute(
+                    "INSERT INTO complaint_assignments (complaint_id, staff_id, assigned_by, notes) VALUES (%s, %s, %s, %s)",
+                    (request_id, worker["id"], session["user_id"], "Reassigned after declined assignment"),
+                )
+            add_history(cursor, request_id, session["user_id"], complaint["status"], complaint["status"], "Assignment declined and reassigned")
+        connection.commit()
+    except (mysql.connector.Error, RuntimeError, ValueError):
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Could not save worker request action")
+        flash("The request could not be updated. Please try again.", "error")
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
     return redirect(url_for("worker_requests", done=action), code=303)
 
 
@@ -863,6 +1024,8 @@ def student_new_complaint():
         return redirect(url_for("student_login"))
     errors = {}
     values = {"mobile": "", "location": "", "category": "", "description": ""}
+    if "complaint_token" not in session:
+        session["complaint_token"] = secrets.token_urlsafe(24)
 
     if request.method == "POST":
         for key in values:
@@ -886,9 +1049,23 @@ def student_new_complaint():
             errors["photo"] = photo_error
 
         if not errors:
-            # TODO: save the complaint (and the photo) for student["roll_number"].
-            # Redirect so that refreshing the page does not send it again.
-            return redirect(url_for("student_new_complaint", sent=1), code=303)
+            connection = None
+            try:
+                connection = get_db_connection()
+                complaint_id, assigned = create_complaint(
+                    connection, session["user_id"], values, session["complaint_token"]
+                )
+                connection.commit()
+                session["complaint_token"] = secrets.token_urlsafe(24)
+                return redirect(url_for("student_new_complaint", sent=1, assigned=int(assigned)), code=303)
+            except (mysql.connector.Error, RuntimeError, ValueError):
+                if connection is not None:
+                    connection.rollback()
+                app.logger.exception("Could not create complaint")
+                errors["form"] = "Your complaint could not be saved. Please try again."
+            finally:
+                if connection is not None and connection.is_connected():
+                    connection.close()
 
     return render_template(
         "students/new_complaint.html",
@@ -897,6 +1074,7 @@ def student_new_complaint():
         values=values,
         categories=COMPLAINT_CATEGORIES,
         sent=request.args.get("sent") == "1",
+        assigned=request.args.get("assigned") == "1",
     )
 
 

@@ -12,16 +12,44 @@
     </div>
     <a class="admin-link" href="{{ url_for('index') }}">Leave admin</a>
   </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <p class="admin-message admin-message--{{ category }}" role="status">{{ message }}</p>
+    {% endfor %}
+  {% endwith %}
+  <section class="admin-panel admin-schema-panel">
+    <header class="admin-panel__header">
+      <div>
+        <h2 class="admin-panel__title">Database tables</h2>
+        <p class="admin-panel__note">Create a table directly in the connected MySQL database.</p>
+      </div>
+    </header>
+    <form method="post" action="{{ url_for('admin_create_table') }}" class="admin-form admin-schema-form" autocomplete="off">
+      <div>
+        <label for="table-name">Table name</label>
+        <input id="table-name" name="table_name" required pattern="[A-Za-z][A-Za-z0-9_]*" placeholder="maintenance_notes">
+      </div>
+      <div>
+        <label for="table-columns">Columns</label>
+        <textarea id="table-columns" name="columns" required placeholder="title VARCHAR(255)\ndetails TEXT\nopened_on DATE"></textarea>
+        <small>One column per line: name followed by a supported type. Every table receives an auto-incrementing id.</small>
+      </div>
+      <button class="admin-button" type="submit">Create table</button>
+    </form>
+  </section>
   <section class="admin-grid" aria-label="Database tables">
     {% for table in tables %}
-    <a class="admin-card" href="{{ url_for('admin_table', table_name=table) }}">
+    <article class="admin-card">
       <span class="admin-card__index" aria-hidden="true">{{ '%02d'|format(loop.index) }}</span>
-      <span>
+      <a class="admin-card__body" href="{{ url_for('admin_table', table_name=table) }}">
         <span class="admin-card__title">{{ table.replace('_', ' ')|title }}</span>
         <span class="admin-card__meta">Open table workspace</span>
-      </span>
+      </a>
       <span class="admin-card__arrow" aria-hidden="true">&#8594;</span>
-    </a>
+      <form method="post" action="{{ url_for('admin_delete_table', table_name=table) }}" onsubmit="return confirm('Delete the entire {{ table }} table? All records will be lost.');">
+        <button class="admin-table-delete" type="submit">Delete table</button>
+      </form>
+    </article>
     {% endfor %}
   </section>
 </main>

@@ -4,7 +4,7 @@ from datetime import datetime
 
 import firebase_admin
 import mysql.connector
-from flask import Flask, abort, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from firebase_admin import auth as firebase_auth, credentials
 from jinja2 import TemplateNotFound
 from werkzeug.exceptions import NotFound
@@ -371,7 +371,84 @@ def admin_dashboard():
     denied = require_admin()
     if denied:
         return denied
-    return render_template("admin/dashboard.html", tables=sorted(ADMIN_TABLES))
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        tables = database_tables(cursor)
+    finally:
+        cursor.close()
+        connection.close()
+    return render_template("admin/dashboard.html", tables=tables)
+
+
+@app.route("/admin/table/create", methods=["POST"])
+def admin_create_table():
+    denied = require_admin()
+    if denied:
+        return denied
+
+    table_name = request.form.get("table_name", "").strip()
+    column_lines = request.form.get("columns", "").splitlines()
+    if not is_safe_identifier(table_name):
+        flash("Use a table name containing only letters, numbers, and underscores.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    columns = []
+    for line in column_lines:
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(None, 1)
+        if len(parts) != 2 or not is_safe_identifier(parts[0]) or not is_safe_column_type(parts[1]):
+            flash(f"Invalid column definition: {line}", "error")
+            return redirect(url_for("admin_dashboard"))
+        columns.append((parts[0], parts[1].upper()))
+    if not columns:
+        flash("Add at least one column, for example: name VARCHAR(255).", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        if table_name in database_tables(cursor):
+            flash(f"The table '{table_name}' already exists.", "error")
+            return redirect(url_for("admin_dashboard"))
+        definitions = ["`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY"]
+        definitions.extend(f"`{name}` {column_type}" for name, column_type in columns)
+        cursor.execute(f"CREATE TABLE `{table_name}` ({', '.join(definitions)})")
+        flash(f"Created table '{table_name}'.", "success")
+    except mysql.connector.Error:
+        connection.rollback()
+        app.logger.exception("Could not create admin table")
+        flash("The table could not be created in the connected database.", "error")
+    finally:
+        cursor.close()
+        connection.close()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/table/<table_name>/delete", methods=["POST"])
+def admin_delete_table(table_name):
+    denied = require_admin()
+    if denied:
+        return denied
+    if not is_safe_identifier(table_name):
+        abort(404)
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        if table_name not in database_tables(cursor):
+            abort(404)
+        cursor.execute(f"DROP TABLE `{table_name}`")
+        flash(f"Deleted table '{table_name}' from the connected database.", "success")
+    except mysql.connector.Error:
+        app.logger.exception("Could not delete admin table")
+        flash("The table could not be deleted from the connected database.", "error")
+    finally:
+        cursor.close()
+        connection.close()
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route("/admin/table/<table_name>", methods=["GET", "POST"])
@@ -379,11 +456,13 @@ def admin_table(table_name):
     denied = require_admin()
     if denied:
         return denied
-    if table_name not in ADMIN_TABLES:
+    if not is_safe_identifier(table_name):
         abort(404)
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     try:
+        if table_name not in database_tables(cursor):
+            abort(404)
         columns = table_columns(cursor, table_name)
         column_names = {column["COLUMN_NAME"] for column in columns}
         if request.method == "POST":
@@ -720,6 +799,33 @@ ADMIN_TABLES = {
     "complaint_attachments", "feedback", "suggestions", "complaint_actions",
 }
 
+SAFE_COLUMN_TYPES = {
+    "BIGINT", "BIGINT UNSIGNED", "BOOLEAN", "DATE", "DATETIME", "DECIMAL(10,2)",
+    "DOUBLE", "INT", "INT UNSIGNED", "JSON", "TEXT", "TIMESTAMP", "VARCHAR(255)",
+    "VARCHAR(500)",
+}
+
+
+def is_safe_identifier(value):
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    return bool(value) and value[0].isalpha() and all(character in allowed for character in value)
+
+
+def is_safe_column_type(value):
+    return value.upper() in SAFE_COLUMN_TYPES
+
+
+def database_tables(cursor):
+    cursor.execute(
+        """
+        SELECT TABLE_NAME
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'
+        ORDER BY TABLE_NAME
+        """
+    )
+    return [row["TABLE_NAME"] if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+
 
 def admin_credentials_valid(username, password):
     return (
@@ -736,7 +842,7 @@ def require_admin():
 
 
 def table_columns(cursor, table_name):
-    if table_name not in ADMIN_TABLES:
+    if not is_safe_identifier(table_name):
         abort(404)
     cursor.execute(
         """

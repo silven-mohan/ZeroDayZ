@@ -693,7 +693,7 @@ def add_history(cursor, complaint_id, actor_id, old_status, new_status, note):
     cursor.execute(
         """
         INSERT INTO complaint_history
-            (complaint_id, changed_by, old_status, new_status, note)
+            (complaint_id, actor_id, old_status, new_status, note)
         VALUES (%s, %s, %s, %s, %s)
         """,
         (complaint_id, actor_id, old_status, new_status, note),
@@ -710,7 +710,7 @@ def select_assignment(cursor, category, complaint_id=None):
               SELECT 1 FROM complaint_actions ca
               WHERE ca.complaint_id = %s
                 AND ca.staff_id = u.id
-                AND ca.action = 'declined'
+                AND ca.action = 'decline'
           )
         """
         params.append(complaint_id)
@@ -854,7 +854,7 @@ def worker_request_action(request_id, action):
                 flash("That request cannot be accepted in its current state.", "error")
             else:
                 cursor.execute(
-                    "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'accepted')",
+                    "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'accept')",
                     (request_id, session["user_id"]),
                 )
                 cursor.execute(
@@ -873,7 +873,7 @@ def worker_request_action(request_id, action):
                 add_history(cursor, request_id, session["user_id"], "ongoing", "completed", "Work completed")
         else:
             cursor.execute(
-                "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'declined')",
+                "INSERT INTO complaint_actions (complaint_id, staff_id, action) VALUES (%s, %s, 'decline')",
                 (request_id, session["user_id"]),
             )
             cursor.execute(
@@ -1093,6 +1093,7 @@ def student_new_complaint():
             errors["photo"] = photo_error
 
         if not errors:
+            values["mobile"] = mobile_digits
             connection = None
             try:
                 connection = get_db_connection()

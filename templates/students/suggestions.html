@@ -23,7 +23,7 @@
     <p class="card__lead">Have an idea to make the hostel better? Share it here. For a problem that needs fixing, <a href="{{ url_for('student_new_complaint') }}">register a complaint</a> instead.</p>
 
     {% if sent %}
-    <div class="alert alert--ok" role="status">Thank you for your suggestion. It was not saved yet, because suggestions are not connected to the database.</div>
+    <div class="alert alert--ok" role="status">Thank you for your suggestion. It has been saved.</div>
     {% endif %}
 
     {% if errors %}

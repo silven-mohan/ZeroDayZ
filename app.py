@@ -1305,12 +1305,35 @@ def get_hostel_contacts():
 
 
 def get_developer_contact():
-    """SAMPLE DATA: the person who looks after the ZeroDayZ website itself."""
+    """The people who built and look after the ZeroDayZ website itself."""
     return {
-        "name": "ZeroDayZ developer",
-        "note": "Found a bug, cannot sign in, or see wrong information on this website? Write to the developer. For problems with a room or facility, use a complaint instead.",
-        "email": "developer@example.com",
-        "phone": None,
+        "note": "Found a bug, cannot sign in, or see wrong information on this website? Write to one of the developers. For problems with a room or facility, use a complaint instead.",
+        "people": [
+            {
+                "name": "Silven",
+                "email": "silven667@gmail.com",
+                "linkedin": "https://www.linkedin.com/in/silven-mohan-nakka-358738360/",
+                "github": "https://github.com/silven-mohan",
+            },
+            {
+                "name": "Kasinadh",
+                "email": "kasinadhvannelaba267@gmail.com",
+                "linkedin": "https://www.linkedin.com/in/kasinadh-vannelaba-693557395/",
+                "github": "https://github.com/Kasinadh607",
+            },
+            {
+                "name": "Lawrence",
+                "email": "lawrencekillo718@gmail.com",
+                "linkedin": "https://www.linkedin.com/in/killo-lawrence-200658406/",
+                "github": "https://github.com/Lawrence0718",
+            },
+            {
+                "name": "Moinuddin",
+                "email": "sheikmoinuddin915@gmail.com",
+                "linkedin": "https://www.linkedin.com/in/sheik-moinuddin-388022391/",
+                "github": "https://github.com/Sheik-Moinuddin",
+            },
+        ],
     }
 
 

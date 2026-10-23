@@ -6,7 +6,7 @@
 #}
 
 {% block title %}Contact | ZeroDayZ{% endblock %}
-{% block description %}Phone numbers and email for the hostel warden, the hostel office, security and the ZeroDayZ developer.{% endblock %}
+{% block description %}Phone numbers and email for the hostel warden, the hostel office, security and the ZeroDayZ developers.{% endblock %}
 
 {% block head_extra %}
   {{ super() }}
@@ -19,7 +19,9 @@
   'mail':  '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   'alert': '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
   'code':  '<path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/>',
-  'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+  'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  'linkedin': '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+  'github': '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>'
 } %}
 {% macro svg(name) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ icons[name] | safe }}</svg>{% endmacro %}
 
@@ -62,15 +64,27 @@
   </section>
 
   <section class="dev" aria-labelledby="dev-title">
-    <span class="dev__icon">{{ svg('code') }}</span>
-    <div class="dev__body">
-      <h2 class="dev__title" id="dev-title">Developer</h2>
-      <p class="dev__note">{{ developer.note }}</p>
+    <div class="dev__head">
+      <span class="dev__icon">{{ svg('code') }}</span>
+      <div class="dev__body">
+        <h2 class="dev__title" id="dev-title">Developers</h2>
+        <p class="dev__note">{{ developer.note }}</p>
+      </div>
     </div>
-    <div class="contact__actions dev__actions">
-      {% if developer.email %}<a class="contact__link" href="mailto:{{ developer.email }}">{{ svg('mail') }}<span>{{ developer.email }}</span></a>{% endif %}
-      {% if developer.phone %}<a class="contact__link" href="tel:{{ developer.phone | replace(' ', '') }}">{{ svg('phone') }}<span>{{ developer.phone }}</span></a>{% endif %}
-    </div>
+
+    <ul class="devs">
+      {% for p in developer.people %}
+      <li class="devcard" style="--i: {{ loop.index0 }}">
+        <span class="devcard__avatar" aria-hidden="true">{{ p.name[0] }}</span>
+        <h3 class="devcard__name">{{ p.name }}</h3>
+        <div class="devcard__links">
+          <a class="contact__link" href="mailto:{{ p.email }}">{{ svg('mail') }}<span>{{ p.email }}</span></a>
+          <a class="contact__link" href="{{ p.linkedin }}" target="_blank" rel="noopener noreferrer">{{ svg('linkedin') }}<span>LinkedIn</span></a>
+          <a class="contact__link" href="{{ p.github }}" target="_blank" rel="noopener noreferrer">{{ svg('github') }}<span>GitHub</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
   </section>
 
   <div class="nudge">

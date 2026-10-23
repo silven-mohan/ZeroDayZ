@@ -143,26 +143,61 @@
 .hours__list dt { font-weight: 700; }
 .hours__list dd { margin: 0; }
 
-/* ---------- Developer ---------- */
+/* ---------- Developers ---------- */
 .dev {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: .6rem 1.1rem;
   margin: 0 0 1.4rem;
   padding: 1.2rem;
   background: #f2faff;
   border: 2px dashed var(--edge);
   border-radius: 18px;
 }
+.dev__head { display: flex; align-items: center; gap: 1.1rem; }
 .dev__icon { margin: 0; width: 52px; height: 52px; border-radius: 16px; }
 .dev__icon svg { width: 26px; height: 26px; }
 .dev__title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; }
 .dev__note { margin: .15rem 0 0; max-width: 60ch; color: var(--ink-soft); }
-.dev__actions { grid-column: 1 / -1; margin-top: .2rem; }
-@media (min-width: 860px) {
-  .dev { grid-template-columns: auto 1fr auto; }
-  .dev__actions { grid-column: auto; margin: 0; }
+
+.devs {
+  display: grid;
+  gap: 1rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.devcard {
+  display: grid;
+  align-content: start;
+  gap: .5rem;
+  padding: 1rem;
+  background: var(--white);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  animation: rise .5s var(--ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * .07s);
+  transition: transform .25s var(--ease);
+}
+.devcard:hover { transform: translateY(-3px); }
+.devcard__avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  color: var(--white);
+  background: var(--accent);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+.devcard__name { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+.devcard__links { display: grid; gap: .5rem; margin-top: .3rem; }
+.devcard .contact__link {
+  width: 100%;
+  min-height: 44px;
+  padding: .45rem .8rem;
+  font-size: .92rem;
+  border-radius: 14px;   /* long emails may wrap, so no full pill here */
 }
 
 /* ---------- Call to action ---------- */
@@ -190,6 +225,6 @@
 .nudge { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 1.2rem; border-top: 2px solid var(--line); }
 .nudge p { margin: 0; max-width: 46ch; }
 
-@media (prefers-reduced-motion: reduce) { .contact:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .contact:hover, .devcard:hover { transform: none; } }
 
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
